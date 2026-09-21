@@ -1,0 +1,41 @@
+# Deny access to sensitive directories
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+
+# DirectoryIndex for /admin, /technician, /customer
+DirectoryIndex index.php
+
+# Disable directory listing and content negotiation (conflicts with pretty URLs)
+Options -Indexes -MultiViews
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Protect config, includes, and SQL from direct web access
+    RewriteRule ^config/ - [F,L]
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^database/ - [F,L]
+
+    # /RAPID/admin/index.php → /RAPID/admin/
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} \s/+(.+?)/index\.php(?:[?\s]|$) [NC]
+    RewriteRule ^ /%1/ [R=301,L,QSA]
+
+    # /RAPID/admin/customer.php → /RAPID/admin/customer
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} \s/+(.+?)\.php(?:[?\s]|$) [NC]
+    RewriteRule ^ /%1 [R=301,L,QSA]
+
+    # /admin/customer → /admin/customer.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^([^.]+?)/?$ $1.php [L,QSA]
+</IfModule>
+
+# Block access to hidden files
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>

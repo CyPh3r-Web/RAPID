@@ -1,0 +1,20 @@
+# Uploaded media (keep directories)
+uploads/device/*
+!uploads/device/.htaccess
+!uploads/device/index.php
+uploads/repairs/*
+!uploads/repairs/.htaccess
+!uploads/repairs/index.php
+
+# Node / Tailwind
+node_modules/
+
+# Local / IDE
+.env
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
