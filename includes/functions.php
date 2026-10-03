@@ -307,3 +307,6 @@ require_once __DIR__ . '/ui.php';
 require_once __DIR__ . '/admin_users.php';
 require_once __DIR__ . '/quotation_document.php';
 require_once __DIR__ . '/warranty_document.php';
+require_once __DIR__ . '/billing.php';
+require_once __DIR__ . '/messages.php';
+require_once __DIR__ . '/feedback.php';

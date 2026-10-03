@@ -5,6 +5,9 @@ uploads/device/*
 uploads/repairs/*
 !uploads/repairs/.htaccess
 !uploads/repairs/index.php
+uploads/messages/*
+!uploads/messages/.htaccess
+!uploads/messages/index.php
 
 # Node / Tailwind
 node_modules/

@@ -33,6 +33,9 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 
 -- DELETE (not TRUNCATE): InnoDB refuses TRUNCATE on parent tables when FKs exist,
 -- and phpMyAdmin often ignores SET FOREIGN_KEY_CHECKS during import.
+DELETE FROM `ticket_feedback`;
+DELETE FROM `ticket_messages`;
+DELETE FROM `payments`;
 DELETE FROM `activity_logs`;
 DELETE FROM `notifications`;
 DELETE FROM `warranty_claims`;
@@ -51,6 +54,9 @@ DELETE FROM `customers`;
 DELETE FROM `system_settings`;
 DELETE FROM `users`;
 
+ALTER TABLE `ticket_feedback` AUTO_INCREMENT = 1;
+ALTER TABLE `ticket_messages` AUTO_INCREMENT = 1;
+ALTER TABLE `payments` AUTO_INCREMENT = 1;
 ALTER TABLE `activity_logs` AUTO_INCREMENT = 1;
 ALTER TABLE `notifications` AUTO_INCREMENT = 1;
 ALTER TABLE `warranty_claims` AUTO_INCREMENT = 1;
@@ -526,6 +532,52 @@ INSERT INTO `notifications` (`user_id`, `ticket_id`, `title`, `message`, `is_rea
 (8, 6,  'Quotation approved',        'You approved the quotation for RPR-2026-000006.', 1, '2026-09-04 11:01:00'),
 (8, 10, 'Quotation declined',        'You declined the quotation for RPR-2026-000010.', 1, '2026-08-27 09:41:00'),
 (9, 8,  'Ready for pickup',          'RPR-2026-000008 is ready. Please collect at RAPID Device Care.', 0, '2026-09-06 16:01:00');
+
+-- ------------------------------------------------------------
+-- parts stock on hand (a few at/below reorder level for the dashboard)
+-- ------------------------------------------------------------
+UPDATE `parts` SET `stock_qty` = 6, `reorder_level` = 2;
+UPDATE `parts` SET `stock_qty` = 0 WHERE `sku` IN ('OLED-S21', 'HDMI-SW');
+UPDATE `parts` SET `stock_qty` = 1 WHERE `sku` IN ('LCD-IP13', 'CAM-IP14');
+UPDATE `parts` SET `stock_qty` = 12, `reorder_level` = 4 WHERE `sku` IN ('BAT-IP11', 'PORT-USB-C', 'SPK-EAR', 'SPK-LOUD');
+
+-- ------------------------------------------------------------
+-- payments (completed tickets fully paid; open jobs show downpayments)
+-- ------------------------------------------------------------
+INSERT INTO `payments` (`ticket_id`, `amount`, `method`, `reference_no`, `notes`, `received_by`, `created_at`) VALUES
+(6,   5000.00, 'gcash',         '1009 284 5531', 'Downpayment for parts order', 1, '2026-09-04 11:30:00'),
+(8,   1000.00, 'cash',          NULL,            'Downpayment',                 1, '2026-08-28 12:00:00'),
+(9,   5000.00, 'cash',          NULL,            'Downpayment',                 1, '2026-08-24 10:30:00'),
+(9,   5400.00, 'gcash',         '1011 553 0192', 'Balance on pickup',           1, '2026-09-01 16:25:00'),
+(12,  2500.00, 'cash',          NULL,            NULL,                          1, '2026-08-10 15:55:00'),
+(13,  1500.00, 'maya',          'MY-77120394',   NULL,                          1, '2026-07-01 15:35:00'),
+(14,  2400.00, 'cash',          NULL,            NULL,                          1, '2026-06-10 13:55:00'),
+(15,  1800.00, 'gcash',         '1007 441 9083', NULL,                          1, '2026-05-05 16:05:00'),
+(16,  6000.00, 'bank_transfer', 'BDO-0412-5531', NULL,                          1, '2026-04-12 14:50:00'),
+(17,  7700.00, 'card',          'VISA ****4417', NULL,                          1, '2026-02-20 16:50:00'),
+(18,  1650.00, 'cash',          NULL,            NULL,                          1, '2025-12-14 15:55:00'),
+(19,  3000.00, 'cash',          NULL,            NULL,                          1, '2025-11-22 13:25:00'),
+(20,  2600.00, 'gcash',         '1003 118 2270', NULL,                          1, '2025-10-18 15:15:00');
+
+-- ------------------------------------------------------------
+-- ticket_messages
+-- ------------------------------------------------------------
+INSERT INTO `ticket_messages` (`ticket_id`, `user_id`, `body`, `created_at`) VALUES
+(5, 3, 'Hi! Is the battery replacement covered if the iPad still turns off at 30% after?', '2026-09-05 16:10:00'),
+(5, 5, 'Yes — the new battery has a 30-day warranty. We also run a full cycle test before release.', '2026-09-05 16:40:00'),
+(8, 9, 'Can I pick it up on Saturday afternoon?', '2026-09-06 16:20:00'),
+(8, 2, 'Saturday works, we are open until 6 PM. Remaining balance is ₱2,400.00.', '2026-09-06 16:45:00');
+
+-- ------------------------------------------------------------
+-- ticket_feedback (customer ratings on completed repairs)
+-- ------------------------------------------------------------
+INSERT INTO `ticket_feedback` (`ticket_id`, `customer_id`, `technician_id`, `rating`, `comment`, `created_at`) VALUES
+(9,  3, 3, 5, 'Display looks brand new and the S Pen works perfectly.', '2026-09-02 09:00:00'),
+(12, 3, 3, 4, 'Good sound now. Took a day longer than I hoped.', '2026-08-11 10:00:00'),
+(13, 4, 1, 5, 'Fast and friendly. Explained everything.', '2026-07-02 09:30:00'),
+(14, 2, 2, 4, NULL, '2026-06-11 12:00:00'),
+(16, 4, 2, 3, 'Trackpad fixed but the laptop came back with a smudged screen.', '2026-04-13 08:45:00'),
+(17, 5, 1, 5, 'Excellent work on the OLED replacement.', '2026-02-21 11:00:00');
 
 -- ------------------------------------------------------------
 -- activity_logs

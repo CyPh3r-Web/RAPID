@@ -25,6 +25,8 @@ $form = [
     'name' => (string) ($row['name'] ?? ''),
     'category' => (string) ($row['category'] ?? ''),
     'unit_price' => $row ? (string) $row['unit_price'] : '0',
+    'stock_qty' => $row ? (string) (int) $row['stock_qty'] : '0',
+    'reorder_level' => $row ? (string) (int) $row['reorder_level'] : '2',
     'notes' => (string) ($row['notes'] ?? ''),
     'is_active' => $row ? (string) (int) $row['is_active'] : '1',
 ];
@@ -36,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form['name'] = trim((string) ($_POST['name'] ?? ''));
     $form['category'] = trim((string) ($_POST['category'] ?? ''));
     $form['unit_price'] = trim((string) ($_POST['unit_price'] ?? '0'));
+    $form['stock_qty'] = trim((string) ($_POST['stock_qty'] ?? '0'));
+    $form['reorder_level'] = trim((string) ($_POST['reorder_level'] ?? '2'));
     $form['notes'] = trim((string) ($_POST['notes'] ?? ''));
     $form['is_active'] = isset($_POST['is_active']) ? '1' : '0';
 
@@ -44,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'name' => $form['name'],
         'category' => $form['category'],
         'unit_price' => $form['unit_price'],
+        'stock_qty' => $form['stock_qty'],
+        'reorder_level' => $form['reorder_level'],
         'notes' => $form['notes'],
         'is_active' => $form['is_active'] === '1',
     ]);
@@ -101,6 +107,14 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <div>
                     <label class="form-label" for="unit_price">Unit price (₱)</label>
                     <input type="number" step="0.01" min="0" class="form-control" id="unit_price" name="unit_price" required value="<?= e($form['unit_price']) ?>">
+                </div>
+                <div>
+                    <label class="form-label" for="stock_qty">Stock on hand</label>
+                    <input type="number" step="1" class="form-control" id="stock_qty" name="stock_qty" required value="<?= e($form['stock_qty']) ?>">
+                </div>
+                <div>
+                    <label class="form-label" for="reorder_level">Reorder level <span class="text-rapid-muted font-normal">(alert at or below)</span></label>
+                    <input type="number" step="1" min="0" class="form-control" id="reorder_level" name="reorder_level" required value="<?= e($form['reorder_level']) ?>">
                 </div>
                 <div class="flex items-end pb-1">
                     <label class="inline-flex items-center gap-2 text-sm">

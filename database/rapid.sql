@@ -12,6 +12,9 @@ USE `rapid`;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `ticket_feedback`;
+DROP TABLE IF EXISTS `ticket_messages`;
+DROP TABLE IF EXISTS `payments`;
 DROP TABLE IF EXISTS `activity_logs`;
 DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `claim_status_history`;
@@ -237,6 +240,8 @@ CREATE TABLE `parts` (
   `name` VARCHAR(255) NOT NULL,
   `category` VARCHAR(100) DEFAULT NULL,
   `unit_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `stock_qty` INT NOT NULL DEFAULT 0,
+  `reorder_level` INT UNSIGNED NOT NULL DEFAULT 2,
   `notes` TEXT DEFAULT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -266,6 +271,67 @@ CREATE TABLE `quotation_items` (
   KEY `idx_quotation_items_part` (`part_id`),
   CONSTRAINT `fk_quotation_items_quote` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_quotation_items_part` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- payments (balance = latest approved quotation total − non-voided payments)
+-- ------------------------------------------------------------
+CREATE TABLE `payments` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ticket_id` INT UNSIGNED NOT NULL,
+  `amount` DECIMAL(10,2) NOT NULL,
+  `method` ENUM('cash', 'gcash', 'maya', 'bank_transfer', 'card') NOT NULL DEFAULT 'cash',
+  `reference_no` VARCHAR(100) DEFAULT NULL,
+  `notes` VARCHAR(255) DEFAULT NULL,
+  `received_by` INT UNSIGNED DEFAULT NULL,
+  `voided_at` DATETIME DEFAULT NULL,
+  `voided_by` INT UNSIGNED DEFAULT NULL,
+  `void_reason` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_payments_ticket` (`ticket_id`),
+  KEY `idx_payments_created` (`created_at`),
+  CONSTRAINT `fk_payments_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `repair_tickets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_payments_received_by` FOREIGN KEY (`received_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_payments_voided_by` FOREIGN KEY (`voided_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- ticket_messages (customer ↔ technician/shop thread per ticket)
+-- ------------------------------------------------------------
+CREATE TABLE `ticket_messages` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ticket_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `body` TEXT DEFAULT NULL,
+  `attachment_name` VARCHAR(255) DEFAULT NULL,
+  `attachment_path` VARCHAR(500) DEFAULT NULL,
+  `attachment_type` VARCHAR(100) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ticket_messages_ticket` (`ticket_id`, `created_at`),
+  CONSTRAINT `fk_ticket_messages_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `repair_tickets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_messages_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- ticket_feedback (one customer rating per completed ticket)
+-- ------------------------------------------------------------
+CREATE TABLE `ticket_feedback` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ticket_id` INT UNSIGNED NOT NULL,
+  `customer_id` INT UNSIGNED NOT NULL,
+  `technician_id` INT UNSIGNED DEFAULT NULL,
+  `rating` TINYINT UNSIGNED NOT NULL,
+  `comment` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_ticket_feedback_ticket` (`ticket_id`),
+  KEY `idx_ticket_feedback_technician` (`technician_id`),
+  CONSTRAINT `fk_ticket_feedback_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `repair_tickets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_feedback_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ticket_feedback_technician` FOREIGN KEY (`technician_id`) REFERENCES `technicians` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `chk_ticket_feedback_rating` CHECK (`rating` BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------

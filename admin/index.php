@@ -20,6 +20,8 @@ $customers = (int) $pdo->query('SELECT COUNT(*) FROM customers')->fetchColumn();
 $technicians = (int) $pdo->query('SELECT COUNT(*) FROM technicians')->fetchColumn();
 $activeWarranties = (int) $pdo->query("SELECT COUNT(*) FROM warranties WHERE warranty_end >= CURDATE() AND warranty_status IN ('active','expiring_soon')")->fetchColumn();
 $openClaims = (int) $pdo->query("SELECT COUNT(*) FROM warranty_claims WHERE claim_status NOT IN ('rejected','resolved')")->fetchColumn();
+$billingTotals = billing_totals();
+$lowStock = low_stock_parts(5);
 
 $statusCounts = $pdo->query('SELECT current_status, COUNT(*) FROM repair_tickets GROUP BY current_status')
     ->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -71,6 +73,7 @@ $techLoad = $pdo->query(
      GROUP BY t.id, u.first_name, u.last_name, t.availability_status
      ORDER BY open_jobs DESC, name ASC"
 )->fetchAll();
+$techRatings = technician_ratings();
 $maxLoad = max(1, ...array_map(static fn ($t) => (int) $t['open_jobs'], $techLoad ?: [['open_jobs' => 0]]));
 
 $openClaimRows = $pdo->query(
@@ -128,6 +131,8 @@ require_once __DIR__ . '/../includes/navbar.php';
             <a href="<?= e(url('admin/technicians.php')) ?>"><div class="label">Technicians</div><div class="value"><?= $technicians ?></div></a>
             <a href="<?= e(url('admin/claims.php')) ?>"><div class="label">Active warranties</div><div class="value"><?= $activeWarranties ?></div></a>
             <a href="<?= e(url('admin/claims.php')) ?>"><div class="label">Open claims</div><div class="value"><?= $openClaims ?></div></a>
+            <div class="metric-item" title="<?= (int) $billingTotals['unpaid_tickets'] ?> ticket(s) with a balance"><div class="label">Unpaid balances</div><div class="value"><?= e(money_php($billingTotals['outstanding'])) ?></div></div>
+            <a href="<?= e(url('admin/parts.php?status=low')) ?>"><div class="label">Low stock parts</div><div class="value"><?= count($lowStock) === 5 ? '5+' : count($lowStock) ?></div></a>
         </div>
 
         <section class="rapid-card pipeline-card mb-4" aria-labelledby="pipelineTitle">
@@ -208,7 +213,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                         <?php foreach ($techLoad as $t): ?>
                             <li>
                                 <div class="load-list-row">
-                                    <span class="font-bold"><?= e($t['name']) ?></span>
+                                    <span class="font-bold"><?= e($t['name']) ?><?php if (isset($techRatings[(int) $t['id']])): ?> <span class="tech-rating" title="<?= (int) $techRatings[(int) $t['id']]['count'] ?> review(s)"><i class="bi bi-star-fill" aria-hidden="true"></i> <?= e((string) $techRatings[(int) $t['id']]['avg']) ?></span><?php endif; ?></span>
                                     <span class="text-rapid-muted"><?= (int) $t['open_jobs'] ?> open<?= $t['availability_status'] !== 'available' ? ' · ' . e(ucfirst((string) $t['availability_status'])) : '' ?></span>
                                 </div>
                                 <div class="load-bar" role="img" aria-label="<?= (int) $t['open_jobs'] ?> open jobs"><span style="width: <?= (int) round((int) $t['open_jobs'] / $maxLoad * 100) ?>%"></span></div>
@@ -217,6 +222,28 @@ require_once __DIR__ . '/../includes/navbar.php';
                     </ul>
                 <?php endif; ?>
             </section>
+
+            <?php if ($lowStock): ?>
+            <section class="rapid-card" aria-labelledby="lowStockTitle">
+                <div class="flex justify-between items-center gap-2 mb-2">
+                    <h2 id="lowStockTitle" class="text-lg mb-0">Low stock</h2>
+                    <a class="text-sm font-bold" href="<?= e(url('admin/parts.php?status=low')) ?>">All</a>
+                </div>
+                <ul class="claim-mini-list">
+                    <?php foreach ($lowStock as $p): ?>
+                        <li>
+                            <a href="<?= e(url('admin/part_form.php?id=' . (int) $p['id'])) ?>">
+                                <span class="min-w-0">
+                                    <span class="ticket-mono text-sm"><?= e($p['sku'] ?: 'No SKU') ?></span>
+                                    <span class="block font-bold text-rapid truncate"><?= e($p['name']) ?></span>
+                                </span>
+                                <span class="badge-status <?= e(stock_badge_class((int) $p['stock_qty'], (int) $p['reorder_level'])) ?>"><?= (int) $p['stock_qty'] ?> left</span>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+            <?php endif; ?>
 
             <section class="rapid-card" aria-labelledby="openClaimsTitle">
                 <div class="flex justify-between items-center gap-2 mb-2">

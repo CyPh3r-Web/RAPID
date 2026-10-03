@@ -46,10 +46,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('admin/ticket.php?id=' . $ticketId);
         }
         $error = $result['error'] ?? 'Status update failed.';
+    } elseif ($action === 'payment') {
+        $result = record_payment(
+            $ticketId,
+            (float) ($_POST['amount'] ?? 0),
+            (string) ($_POST['method'] ?? ''),
+            (string) ($_POST['reference_no'] ?? ''),
+            (string) ($_POST['payment_notes'] ?? ''),
+            (int) $user['id']
+        );
+        if ($result['ok']) {
+            flash_set('success', 'Payment recorded as ' . payment_receipt_number((int) $result['payment_id']) . '.');
+            redirect('admin/ticket.php?id=' . $ticketId . '#billing');
+        }
+        $error = $result['error'] ?? 'Could not record payment.';
+    } elseif ($action === 'void_payment') {
+        $result = void_payment((int) ($_POST['payment_id'] ?? 0), $ticketId, (int) $user['id'], (string) ($_POST['void_reason'] ?? ''));
+        if ($result['ok']) {
+            flash_set('success', 'Payment voided.');
+            redirect('admin/ticket.php?id=' . $ticketId . '#billing');
+        }
+        $error = $result['error'] ?? 'Could not void payment.';
+    } elseif ($action === 'message') {
+        $result = post_ticket_message($ticketId, $user, (string) ($_POST['message_body'] ?? ''), $_FILES['attachment'] ?? []);
+        if ($result['ok']) {
+            redirect('admin/ticket.php?id=' . $ticketId . '#messages');
+        }
+        $error = $result['error'] ?? 'Could not send message.';
     }
 
     $ticket = get_ticket_full($ticketId);
 }
+
+$billing = ticket_billing($ticketId);
+$messages = get_ticket_messages($ticketId);
 
 $history = db()->prepare('SELECT status, remarks, created_at FROM repair_status_history WHERE ticket_id = ? ORDER BY created_at ASC, id ASC');
 $history->execute([$ticketId]);
@@ -144,6 +174,15 @@ require_once __DIR__ . '/../includes/navbar.php';
                         <?php render_quotation_card($quotationRow, false, url('admin/quotation_print.php?id=' . $ticketId)); ?>
                     </div>
                 <?php endif; ?>
+
+                <?php if ($feedback = get_ticket_feedback($ticketId)): ?>
+                    <div class="rapid-card mb-3">
+                        <h2 class="text-sm font-semibold text-rapid mb-2">Customer feedback</h2>
+                        <?php render_feedback_card($feedback); ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php render_ticket_thread($messages, (int) $user['id']); ?>
             </div>
 
             <div class="lg:col-span-5">
@@ -172,6 +211,40 @@ require_once __DIR__ . '/../includes/navbar.php';
                         <?php endif; ?>
                         <button type="submit" class="btn btn-rapid-primary w-full">Save assignment</button>
                     </form>
+                </div>
+
+                <div class="rapid-card mb-3" id="billing">
+                    <h2 class="text-sm font-semibold text-rapid mb-3">Payments</h2>
+                    <?php render_billing_card($billing, 'admin/receipt_print.php', true); ?>
+                    <?php if ($billing['quote_id'] !== null && $billing['balance'] > 0 && $ticket['current_status'] !== 'cancelled'): ?>
+                        <form method="post" class="payment-form" data-disable-on-submit>
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action" value="payment">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="form-label" for="amount">Amount (₱)</label>
+                                    <input type="number" step="0.01" min="0.01" max="<?= e(number_format($billing['balance'], 2, '.', '')) ?>" class="form-control" id="amount" name="amount" required value="<?= e(number_format($billing['balance'], 2, '.', '')) ?>">
+                                </div>
+                                <div>
+                                    <label class="form-label" for="method">Method</label>
+                                    <select class="form-select" id="method" name="method" required>
+                                        <?php foreach (PAYMENT_METHODS as $code => $label): ?>
+                                            <option value="<?= e($code) ?>"><?= e($label) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="form-label" for="reference_no">Reference no. <span class="text-rapid-muted font-normal">(required for non-cash)</span></label>
+                                    <input type="text" class="form-control" id="reference_no" name="reference_no" maxlength="100" placeholder="e.g. GCash ref 1234 567 890">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="form-label" for="payment_notes">Notes</label>
+                                    <input type="text" class="form-control" id="payment_notes" name="payment_notes" maxlength="255" placeholder="Downpayment, balance on pickup…">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-rapid-primary w-full mt-3">Record payment</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
 
                 <div class="rapid-card mb-3">

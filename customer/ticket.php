@@ -43,7 +43,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('error', $result['error'] ?? 'Could not process your response.');
         redirect('customer/ticket.php?id=' . $ticketId);
     }
+    if ($action === 'message') {
+        $result = post_ticket_message($ticketId, $user, (string) ($_POST['message_body'] ?? ''), $_FILES['attachment'] ?? []);
+        if (!$result['ok']) {
+            flash_set('error', $result['error'] ?? 'Could not send message.');
+        }
+        redirect('customer/ticket.php?id=' . $ticketId . '#messages');
+    }
+    if ($action === 'feedback') {
+        $result = submit_ticket_feedback($ticketId, $customerId, (int) $user['id'], (int) ($_POST['rating'] ?? 0), (string) ($_POST['feedback_comment'] ?? ''));
+        flash_set($result['ok'] ? 'success' : 'error', $result['ok'] ? 'Thank you for your feedback!' : ($result['error'] ?? 'Could not save feedback.'));
+        redirect('customer/ticket.php?id=' . $ticketId . '#feedback');
+    }
 }
+
+$billing = ticket_billing($ticketId);
+$messages = get_ticket_messages($ticketId);
+$feedback = get_ticket_feedback($ticketId);
 
 $history = db()->prepare(
     'SELECT status, remarks, created_at FROM repair_status_history
@@ -227,6 +243,8 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <?php endif; ?>
 
                 <?php if ($quotationRow && !$quoteAwaiting) $renderQuote(); ?>
+
+                <?php render_ticket_thread($messages, (int) $user['id'], 'Messages with the shop'); ?>
             </div>
 
             <aside class="customer-ticket-side">
@@ -235,6 +253,20 @@ require_once __DIR__ . '/../includes/navbar.php';
                     <?php render_public_stepper($ticket['current_status'], $historyRows, $ticket['estimated_completion'] ?? null); ?>
                     <?php render_notify_channels(); ?>
                 </section>
+
+                <?php if ($ticket['current_status'] === 'completed'): ?>
+                    <section class="rapid-card" id="feedback">
+                        <h2 class="text-sm font-semibold text-rapid mb-3"><?= $feedback ? 'Your feedback' : 'Rate this repair' ?></h2>
+                        <?php $feedback ? render_feedback_card($feedback) : render_feedback_form(); ?>
+                    </section>
+                <?php endif; ?>
+
+                <?php if ($billing['quote_id'] !== null): ?>
+                    <section class="rapid-card" id="billing">
+                        <h2 class="text-sm font-semibold text-rapid mb-3">Payments</h2>
+                        <?php render_billing_card($billing, 'customer/receipt_print.php'); ?>
+                    </section>
+                <?php endif; ?>
 
                 <section class="rapid-card">
                     <?php render_ticket_id_block($ticket['ticket_number']); ?>

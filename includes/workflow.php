@@ -104,6 +104,10 @@ function update_ticket_status(int $ticketId, string $newStatus, int $updatedByUs
         return ['ok' => false, 'error' => 'Invalid status.'];
     }
 
+    // DDL auto-commits in MySQL, so schema checks must run before the transaction opens.
+    ensure_billing_schema();
+    ensure_parts_schema();
+
     $pdo = db();
     try {
         $pdo->beginTransaction();
@@ -126,6 +130,32 @@ function update_ticket_status(int $ticketId, string $newStatus, int $updatedByUs
         if (!can_transition_status($from, $newStatus)) {
             $pdo->rollBack();
             return ['ok' => false, 'error' => 'Invalid status transition from ' . status_label($from) . ' to ' . status_label($newStatus) . '.'];
+        }
+
+        if ($newStatus === 'completed') {
+            $balance = ticket_billing($ticketId)['balance'];
+            if ($balance > 0) {
+                $pdo->rollBack();
+                return ['ok' => false, 'error' => 'Collect the remaining balance of ' . money_php($balance) . ' before completing this ticket.'];
+            }
+        }
+
+        // Staff may record a phone/in-person decision via the status menu; keep the quote in sync.
+        if (in_array($newStatus, ['approved', 'declined'], true)) {
+            $pdo->prepare("UPDATE quotations SET status = ? WHERE ticket_id = ? AND status = 'pending'")
+                ->execute([$newStatus, $ticketId]);
+        }
+
+        // Stock follows the approved quotation: consumed on approval, returned if the job is cancelled.
+        $stockQuoteId = null;
+        $approvedJob = in_array($from, ['approved', 'repairing', 'ready_for_pickup'], true);
+        if ($newStatus === 'approved' || ($newStatus === 'cancelled' && $approvedJob)) {
+            $q = $pdo->prepare("SELECT id FROM quotations WHERE ticket_id = ? AND status = 'approved' ORDER BY id DESC LIMIT 1");
+            $q->execute([$ticketId]);
+            $stockQuoteId = $q->fetchColumn() ?: null;
+            if ($stockQuoteId) {
+                adjust_stock_for_quotation($pdo, (int) $stockQuoteId, $newStatus === 'approved' ? -1 : 1);
+            }
         }
 
         $sets = ['current_status = ?'];
@@ -179,6 +209,14 @@ function update_ticket_status(int $ticketId, string $newStatus, int $updatedByUs
 
         if ($newStatus === 'completed') {
             start_warranty_for_ticket($ticketId);
+        }
+
+        if ($newStatus === 'approved' && $stockQuoteId) {
+            $low = low_stock_parts(10, (int) $stockQuoteId);
+            if ($low) {
+                $names = array_map(static fn ($p) => $p['name'] . ' (' . (int) $p['stock_qty'] . ' left)', $low);
+                notify_admins('Low stock', 'Ticket ' . $ticket['ticket_number'] . ' used parts now at or below reorder level: ' . implode(', ', $names) . '.', $ticketId);
+            }
         }
 
         log_activity($updatedByUserId, 'status_update', 'Ticket ' . $ticket['ticket_number'] . ' → ' . $newStatus);

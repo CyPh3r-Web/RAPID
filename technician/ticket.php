@@ -122,6 +122,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('success', 'Media uploaded.');
             redirect('technician/ticket.php?id=' . $ticketId);
         }
+    } elseif ($action === 'message') {
+        $result = post_ticket_message($ticketId, $user, (string) ($_POST['message_body'] ?? ''), $_FILES['attachment'] ?? []);
+        if ($result['ok']) {
+            redirect('technician/ticket.php?id=' . $ticketId . '#messages');
+        }
+        $error = $result['error'] ?? 'Could not send message.';
     }
 
     $ticket = get_ticket_full($ticketId);
@@ -147,6 +153,8 @@ if ($quotationRow) {
     $quotationRow['items'] = get_quotation_items((int) $quotationRow['id']);
 }
 $catalogParts = list_parts_catalog(true);
+$billing = ticket_billing($ticketId);
+$messages = get_ticket_messages($ticketId);
 
 // Technician-facing transitions (exclude customer-only approve/decline from UI prompts where awkward)
 $nextStatuses = allowed_status_transitions($ticket['current_status']);
@@ -269,6 +277,8 @@ $renderCatalogOptions = static function (string $selectedId) use ($catalogParts)
             $label .= ' (' . $part['sku'] . ')';
         }
         $label .= ' — ₱' . number_format((float) $part['unit_price'], 2);
+        $stock = (int) $part['stock_qty'];
+        $label .= $stock > 0 ? ' · ' . $stock . ' in stock' : ' · out of stock';
         echo '<option value="' . e($pid) . '"'
             . ' data-name="' . e((string) $part['name']) . '"'
             . ' data-price="' . e($price) . '"'
@@ -622,9 +632,23 @@ require_once __DIR__ . '/../includes/navbar.php';
                         </div>
                     </section>
                 <?php endif; ?>
+
+                <?php render_ticket_thread($messages, (int) $user['id'], 'Messages with customer'); ?>
             </div>
 
             <aside class="tech-ticket-side">
+                <?php if ($feedback = get_ticket_feedback($ticketId)): ?>
+                    <div class="rapid-card mb-3">
+                        <h2 class="tech-ticket-section-title">Customer feedback</h2>
+                        <?php render_feedback_card($feedback); ?>
+                    </div>
+                <?php endif; ?>
+                <?php if ($billing['quote_id'] !== null): ?>
+                    <div class="rapid-card mb-3" id="billing">
+                        <h2 class="tech-ticket-section-title">Payments</h2>
+                        <?php render_billing_card($billing); ?>
+                    </div>
+                <?php endif; ?>
                 <div class="rapid-card ai-assist-card mb-3"
                      id="aiAssist"
                      data-ticket-id="<?= (int) $ticketId ?>"

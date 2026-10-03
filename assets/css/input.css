@@ -4469,3 +4469,216 @@ body.reports-print .reports-grid-3 {
     print-color-adjust: exact;
   }
 }
+
+/* Payments, ticket messages, customer feedback */
+@layer components {
+  .billing-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .billing-summary > div {
+    padding: 10px 12px;
+    border: 1px solid #E8EEF6;
+    background: #F8FAFD;
+  }
+  .billing-summary span {
+    display: block;
+    font-size: 0.75rem;
+    color: #64748B;
+  }
+  .billing-summary strong {
+    display: block;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: #091C39;
+  }
+  .billing-summary .is-due {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+  }
+  .billing-summary .is-due strong { color: #B45309; }
+  .billing-summary .is-paid {
+    background: #ECFDF5;
+    border-color: #A7F3D0;
+  }
+  .billing-summary .is-paid strong { color: #047857; }
+  .billing-paid-note {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #047857;
+    margin-bottom: 8px;
+  }
+  .payment-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .payment-list li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid #EDF1F6;
+  }
+  .payment-list-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    font-size: 0.875rem;
+  }
+  .payment-list-main span { color: #64748B; }
+  .payment-list li.is-voided strong {
+    text-decoration: line-through;
+    color: #94A3B8;
+  }
+  .payment-void-note { color: #DC2626 !important; }
+  .payment-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .payment-void-form {
+    display: flex;
+    gap: 6px;
+  }
+  .payment-void-form .form-control {
+    width: 9rem;
+    padding: 4px 8px;
+    font-size: 0.8125rem;
+  }
+  .payment-form {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #E8EEF6;
+  }
+
+  .thread-list {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 28rem;
+    overflow-y: auto;
+  }
+  .thread-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 85%;
+  }
+  .thread-msg.is-mine {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+  .thread-meta {
+    font-size: 0.75rem;
+    color: #64748B;
+    margin-bottom: 4px;
+  }
+  .thread-role {
+    display: inline-block;
+    padding: 0 6px;
+    border: 1px solid #D5DDE8;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .thread-bubble {
+    padding: 10px 14px;
+    background: #F1F5F9;
+    color: #102035;
+    overflow-wrap: anywhere;
+  }
+  .thread-msg.is-mine .thread-bubble {
+    background: #0072FC;
+    color: #fff;
+  }
+  .thread-bubble p { margin: 0; }
+  .thread-attachment {
+    display: block;
+    max-width: 220px;
+    max-height: 220px;
+    margin-top: 6px;
+    object-fit: cover;
+  }
+  .thread-composer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .thread-attach {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: #475569;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .thread-attach input {
+    font-size: 0.75rem;
+    max-width: 12rem;
+  }
+
+  .rating-stars {
+    display: inline-flex;
+    gap: 2px;
+    color: #F59E0B;
+  }
+  .feedback-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .feedback-comment {
+    flex-basis: 100%;
+    margin: 4px 0 0;
+    font-size: 0.9375rem;
+  }
+  .rating-input {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 4px;
+    border: 0;
+    padding: 0;
+    margin: 0 0 8px;
+  }
+  .rating-input input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .rating-input label {
+    font-size: 1.75rem;
+    line-height: 1;
+    color: #CBD5E1;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .rating-input label:hover,
+  .rating-input label:hover ~ label,
+  .rating-input input:checked ~ label {
+    color: #F59E0B;
+  }
+  .rating-input input:focus-visible + label {
+    outline: 2px solid #0072FC;
+    outline-offset: 2px;
+  }
+  .tech-rating {
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: #B45309;
+  }
+}

@@ -100,6 +100,9 @@ $approvedRevenue = (float) $pdo->query(
     "SELECT COALESCE(SUM(total_amount), 0) FROM quotations WHERE status = 'approved'"
 )->fetchColumn();
 
+$billingTotals = billing_totals();
+$feedbackOverall = feedback_overall();
+
 $claimRows = $pdo->query(
     'SELECT claim_status, COUNT(*) AS cnt FROM warranty_claims GROUP BY claim_status'
 )->fetchAll();
@@ -254,6 +257,29 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <div>
                     <div class="label">Warranty claims</div>
                     <div class="value"><?= (int) $claimTotal ?></div>
+                </div>
+            </div>
+            <div class="reports-kpi">
+                <div class="reports-kpi-icon is-ok"><i class="bi bi-cash-coin" aria-hidden="true"></i></div>
+                <div>
+                    <div class="label">Payments collected</div>
+                    <div class="value value-sm"><?= e(money_php($billingTotals['collected'])) ?></div>
+                </div>
+            </div>
+            <div class="reports-kpi">
+                <div class="reports-kpi-icon is-amber"><i class="bi bi-hourglass-split" aria-hidden="true"></i></div>
+                <div>
+                    <div class="label">Unpaid balances</div>
+                    <div class="value value-sm"><?= e(money_php($billingTotals['outstanding'])) ?></div>
+                    <div class="hint"><?= (int) $billingTotals['unpaid_tickets'] ?> ticket<?= $billingTotals['unpaid_tickets'] === 1 ? '' : 's' ?></div>
+                </div>
+            </div>
+            <div class="reports-kpi">
+                <div class="reports-kpi-icon is-blue"><i class="bi bi-star-fill" aria-hidden="true"></i></div>
+                <div>
+                    <div class="label">Customer rating</div>
+                    <div class="value"><?= $feedbackOverall['avg'] === null ? '—' : e((string) $feedbackOverall['avg']) ?><?php if ($feedbackOverall['avg'] !== null): ?><span class="unit"> / 5</span><?php endif; ?></div>
+                    <div class="hint"><?= (int) $feedbackOverall['count'] ?> review<?= $feedbackOverall['count'] === 1 ? '' : 's' ?></div>
                 </div>
             </div>
         </div>

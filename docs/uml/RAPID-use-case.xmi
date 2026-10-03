@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.1" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmlns:uml="http://schema.omg.org/spec/UML/2.1">
+  <xmi:Documentation xmi:Exporter="RAPID use case generator" xmi:ExporterVersion="1.0"/>
+  <uml:Model xmi:type="uml:Model" xmi:id="MODEL_RAPID" name="RAPID">
+    <packagedElement xmi:type="uml:Package" xmi:id="PKG_Actors" name="Actors">
+      <packagedElement xmi:type="uml:Actor" xmi:id="ACT_Guest" name="Guest"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="ACT_Customer" name="Customer"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="ACT_Admin" name="Admin"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="ACT_Technician" name="Technician"/>
+      <packagedElement xmi:type="uml:Actor" xmi:id="ACT_AI_Assistant" name="AI Assistant"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Package" xmi:id="PKG_RAPID_System" name="RAPID System">
+      <packagedElement xmi:type="uml:Package" xmi:id="PKG_Guest" name="Guest Use Cases">
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Track_Repair_Ticket" name="Track Repair Ticket">
+          <include xmi:type="uml:Include" xmi:id="INC_1" addition="UC_Verify_Contact_Details"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Verify_Contact_Details" name="Verify Contact Details"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_View_Status_Timeline" name="View Status Timeline">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_1" extendedCase="UC_Track_Repair_Ticket"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Verify_Warranty_Certificate" name="Verify Warranty Certificate"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Register_Account" name="Register Account"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Package" xmi:id="PKG_Customer" name="Customer Use Cases">
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Book_Repair" name="Book Repair">
+          <include xmi:type="uml:Include" xmi:id="INC_2" addition="UC_Enter_Device_Details"/>
+          <include xmi:type="uml:Include" xmi:id="INC_3" addition="UC_Upload_Before_Repair_Media"/>
+          <include xmi:type="uml:Include" xmi:id="INC_4" addition="UC_Generate_Ticket_Number"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Enter_Device_Details" name="Enter Device Details"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Upload_Before_Repair_Media" name="Upload Before-Repair Media"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Generate_Ticket_Number" name="Generate Ticket Number"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_View_Repair_Progress" name="View Repair Progress"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Review_Quotation" name="Review Quotation"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Approve_Quotation" name="Approve Quotation">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_2" extendedCase="UC_Review_Quotation"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Decline_Quotation" name="Decline Quotation">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_3" extendedCase="UC_Review_Quotation"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Print_Quotation" name="Print Quotation">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_4" extendedCase="UC_Review_Quotation"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_File_Warranty_Claim" name="File Warranty Claim">
+          <include xmi:type="uml:Include" xmi:id="INC_5" addition="UC_Check_Warranty_Eligibility"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Check_Warranty_Eligibility" name="Check Warranty Eligibility"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Track_Warranty_Claim" name="Track Warranty Claim"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Print_Warranty_Certificate" name="Print Warranty Certificate"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_View_Notifications" name="View Notifications"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Package" xmi:id="PKG_Admin" name="Admin Use Cases">
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Manage_Repair_Tickets" name="Manage Repair Tickets"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Assign_Technician" name="Assign Technician">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_5" extendedCase="UC_Manage_Repair_Tickets"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Update_Ticket_Status" name="Update Ticket Status">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_6" extendedCase="UC_Manage_Repair_Tickets"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Process_Warranty_Claim" name="Process Warranty Claim">
+          <include xmi:type="uml:Include" xmi:id="INC_6" addition="UC_Approve_or_Reject_Claim"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Approve_or_Reject_Claim" name="Approve or Reject Claim"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Assign_Claim_Technician" name="Assign Claim Technician">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_7" extendedCase="UC_Process_Warranty_Claim"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Manage_Customers" name="Manage Customers"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Activate_Deactivate_Customer" name="Activate / Deactivate Customer">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_8" extendedCase="UC_Manage_Customers"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Manage_Technicians" name="Manage Technicians"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Activate_Deactivate_Technician" name="Activate / Deactivate Technician">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_9" extendedCase="UC_Manage_Technicians"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Manage_Parts_Catalog" name="Manage Parts Catalog"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Manage_Repair_Templates" name="Manage Repair Templates"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_View_Reports" name="View Reports"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Print_Report" name="Print Report">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_10" extendedCase="UC_View_Reports"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Configure_Settings" name="Configure Settings"/>
+      </packagedElement>
+      <packagedElement xmi:type="uml:Package" xmi:id="PKG_Technician" name="Technician Use Cases">
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_View_Assigned_Tickets" name="View Assigned Tickets"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Record_Diagnosis" name="Record Diagnosis"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Request_AI_Suggestions" name="Request AI Suggestions">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_11" extendedCase="UC_Record_Diagnosis"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Create_Quotation" name="Create Quotation">
+          <include xmi:type="uml:Include" xmi:id="INC_7" addition="UC_Calculate_Quotation_Totals"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Calculate_Quotation_Totals" name="Calculate Quotation Totals"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Apply_Repair_Template" name="Apply Repair Template">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_12" extendedCase="UC_Create_Quotation"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Upload_Repair_Media" name="Upload Repair Media"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Update_Repair_Progress" name="Update Repair Progress"/>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Issue_Warranty_on_Completion" name="Issue Warranty on Completion">
+          <extend xmi:type="uml:Extend" xmi:id="EXT_13" extendedCase="UC_Update_Repair_Progress"/>
+        </packagedElement>
+        <packagedElement xmi:type="uml:UseCase" xmi:id="UC_Resolve_Warranty_Claim" name="Resolve Warranty Claim"/>
+      </packagedElement>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_1" memberEnd="ASSOC_1_src ASSOC_1_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_1_src" type="ACT_Guest" association="ASSOC_1"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_1_dst" type="UC_Track_Repair_Ticket" association="ASSOC_1"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_2" memberEnd="ASSOC_2_src ASSOC_2_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_2_src" type="ACT_Guest" association="ASSOC_2"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_2_dst" type="UC_Verify_Warranty_Certificate" association="ASSOC_2"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_3" memberEnd="ASSOC_3_src ASSOC_3_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_3_src" type="ACT_Guest" association="ASSOC_3"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_3_dst" type="UC_Register_Account" association="ASSOC_3"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_4" memberEnd="ASSOC_4_src ASSOC_4_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_4_src" type="ACT_Customer" association="ASSOC_4"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_4_dst" type="UC_Book_Repair" association="ASSOC_4"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_5" memberEnd="ASSOC_5_src ASSOC_5_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_5_src" type="ACT_Customer" association="ASSOC_5"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_5_dst" type="UC_View_Repair_Progress" association="ASSOC_5"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_6" memberEnd="ASSOC_6_src ASSOC_6_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_6_src" type="ACT_Customer" association="ASSOC_6"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_6_dst" type="UC_Review_Quotation" association="ASSOC_6"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_7" memberEnd="ASSOC_7_src ASSOC_7_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_7_src" type="ACT_Customer" association="ASSOC_7"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_7_dst" type="UC_File_Warranty_Claim" association="ASSOC_7"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_8" memberEnd="ASSOC_8_src ASSOC_8_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_8_src" type="ACT_Customer" association="ASSOC_8"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_8_dst" type="UC_Track_Warranty_Claim" association="ASSOC_8"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_9" memberEnd="ASSOC_9_src ASSOC_9_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_9_src" type="ACT_Customer" association="ASSOC_9"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_9_dst" type="UC_Print_Warranty_Certificate" association="ASSOC_9"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_10" memberEnd="ASSOC_10_src ASSOC_10_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_10_src" type="ACT_Customer" association="ASSOC_10"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_10_dst" type="UC_View_Notifications" association="ASSOC_10"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_11" memberEnd="ASSOC_11_src ASSOC_11_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_11_src" type="ACT_Admin" association="ASSOC_11"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_11_dst" type="UC_Manage_Repair_Tickets" association="ASSOC_11"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_12" memberEnd="ASSOC_12_src ASSOC_12_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_12_src" type="ACT_Admin" association="ASSOC_12"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_12_dst" type="UC_Process_Warranty_Claim" association="ASSOC_12"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_13" memberEnd="ASSOC_13_src ASSOC_13_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_13_src" type="ACT_Admin" association="ASSOC_13"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_13_dst" type="UC_Manage_Customers" association="ASSOC_13"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_14" memberEnd="ASSOC_14_src ASSOC_14_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_14_src" type="ACT_Admin" association="ASSOC_14"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_14_dst" type="UC_Manage_Technicians" association="ASSOC_14"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_15" memberEnd="ASSOC_15_src ASSOC_15_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_15_src" type="ACT_Admin" association="ASSOC_15"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_15_dst" type="UC_Manage_Parts_Catalog" association="ASSOC_15"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_16" memberEnd="ASSOC_16_src ASSOC_16_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_16_src" type="ACT_Admin" association="ASSOC_16"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_16_dst" type="UC_Manage_Repair_Templates" association="ASSOC_16"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_17" memberEnd="ASSOC_17_src ASSOC_17_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_17_src" type="ACT_Admin" association="ASSOC_17"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_17_dst" type="UC_View_Reports" association="ASSOC_17"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_18" memberEnd="ASSOC_18_src ASSOC_18_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_18_src" type="ACT_Admin" association="ASSOC_18"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_18_dst" type="UC_Configure_Settings" association="ASSOC_18"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_19" memberEnd="ASSOC_19_src ASSOC_19_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_19_src" type="ACT_Technician" association="ASSOC_19"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_19_dst" type="UC_View_Assigned_Tickets" association="ASSOC_19"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_20" memberEnd="ASSOC_20_src ASSOC_20_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_20_src" type="ACT_Technician" association="ASSOC_20"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_20_dst" type="UC_Record_Diagnosis" association="ASSOC_20"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_21" memberEnd="ASSOC_21_src ASSOC_21_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_21_src" type="ACT_Technician" association="ASSOC_21"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_21_dst" type="UC_Create_Quotation" association="ASSOC_21"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_22" memberEnd="ASSOC_22_src ASSOC_22_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_22_src" type="ACT_Technician" association="ASSOC_22"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_22_dst" type="UC_Upload_Repair_Media" association="ASSOC_22"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_23" memberEnd="ASSOC_23_src ASSOC_23_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_23_src" type="ACT_Technician" association="ASSOC_23"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_23_dst" type="UC_Update_Repair_Progress" association="ASSOC_23"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_24" memberEnd="ASSOC_24_src ASSOC_24_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_24_src" type="ACT_Technician" association="ASSOC_24"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_24_dst" type="UC_Resolve_Warranty_Claim" association="ASSOC_24"/>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="ASSOC_25" memberEnd="ASSOC_25_src ASSOC_25_dst">
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_25_src" type="ACT_AI_Assistant" association="ASSOC_25"/>
+      <ownedEnd xmi:type="uml:Property" xmi:id="ASSOC_25_dst" type="UC_Request_AI_Suggestions" association="ASSOC_25"/>
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

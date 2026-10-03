@@ -54,6 +54,8 @@ if ($status === 'active') {
     $where[] = 'is_active = 1';
 } elseif ($status === 'inactive') {
     $where[] = 'is_active = 0';
+} elseif ($status === 'low') {
+    $where[] = 'is_active = 1 AND stock_qty <= reorder_level';
 }
 $whereSql = implode(' AND ', $where);
 
@@ -67,7 +69,7 @@ if ($page > $totalPages) {
 }
 
 $stmt = db()->prepare(
-    "SELECT id, sku, name, category, unit_price, is_active, updated_at
+    "SELECT id, sku, name, category, unit_price, stock_qty, reorder_level, is_active, updated_at
      FROM parts
      WHERE $whereSql
      ORDER BY is_active DESC, category IS NULL, category ASC, name ASC
@@ -92,7 +94,7 @@ require_once __DIR__ . '/../includes/navbar.php';
         <div class="page-header flex flex-wrap justify-between items-start gap-2">
             <div>
                 <h1>Parts catalog</h1>
-                <p>Manage priced parts technicians can pick when building quotations.</p>
+                <p>Manage priced parts and stock on hand. Stock is deducted when a customer approves a quotation.</p>
             </div>
             <a class="btn btn-rapid-primary btn-sm" data-modal-form href="<?= e(url('admin/part_form.php')) ?>">Add part</a>
         </div>
@@ -108,6 +110,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                     <option value="">All</option>
                     <option value="active" <?= $status === 'active' ? 'selected' : '' ?>>Active</option>
                     <option value="inactive" <?= $status === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                    <option value="low" <?= $status === 'low' ? 'selected' : '' ?>>Low / out of stock</option>
                 </select>
             </div>
             <div class="flex gap-2">
@@ -128,6 +131,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                                 <th>Name</th>
                                 <th>Category</th>
                                 <th class="text-right">Unit price</th>
+                                <th class="text-right">Stock</th>
                                 <th>Status</th>
                                 <th></th>
                             </tr>
@@ -139,6 +143,11 @@ require_once __DIR__ . '/../includes/navbar.php';
                                     <td class="font-semibold"><?= e($part['name']) ?></td>
                                     <td><?= e($part['category'] ?: '—') ?></td>
                                     <td class="text-right tabular-nums"><?= e(money_php((float) $part['unit_price'])) ?></td>
+                                    <td class="text-right">
+                                        <span class="badge-status <?= e(stock_badge_class((int) $part['stock_qty'], (int) $part['reorder_level'])) ?>" title="Reorder at <?= (int) $part['reorder_level'] ?>">
+                                            <?= (int) $part['stock_qty'] ?>
+                                        </span>
+                                    </td>
                                     <td>
                                         <span class="badge-status <?= (int) $part['is_active'] === 1 ? 'badge-status-success' : 'badge-status-muted' ?>">
                                             <?= (int) $part['is_active'] === 1 ? 'Active' : 'Inactive' ?>
