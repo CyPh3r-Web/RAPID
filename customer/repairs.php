@@ -118,43 +118,30 @@ require_once __DIR__ . '/../includes/navbar.php';
                     <a class="btn btn-rapid-primary btn-sm" href="<?= e(url('customer/book.php')) ?>">Book a repair</a>
                 </div>
             <?php else: ?>
-                <div class="overflow-x-auto">
-                    <table class="rapid-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Ticket</th>
-                                <th>Device</th>
-                                <th>Problem</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($tickets as $t): ?>
-                                <tr>
-                                    <td class="whitespace-nowrap">
-                                        <?php render_ticket_number($t['ticket_number'], url('customer/ticket.php?id=' . (int) $t['id'])); ?>
-                                    </td>
-                                    <td>
-                                        <?= e($t['brand'] . ' ' . $t['model']) ?>
-                                        <div class="text-sm text-rapid-muted"><?= e($t['device_type']) ?></div>
-                                    </td>
-                                    <td class="problem-cell"><?= e(strlen($t['problem_description']) > 80 ? substr($t['problem_description'], 0, 77) . '…' : $t['problem_description']) ?></td>
-                                    <td>
-                                        <span class="badge-status <?= e(status_badge_class($t['current_status'])) ?>">
-                                            <?= e(status_label($t['current_status'])) ?>
-                                        </span>
-                                    </td>
-                                    <td class="whitespace-nowrap text-sm"><?= e(format_datetime($t['created_at'], 'M j, Y')) ?></td>
-                                    <td class="text-right">
-                                        <a class="btn btn-sm btn-rapid-outline" href="<?= e(url('customer/ticket.php?id=' . (int) $t['id'])) ?>">View</a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                <ul class="repair-list">
+                    <?php foreach ($tickets as $t): ?>
+                        <?php
+                        $deviceType = (string) $t['device_type'];
+                        $deviceIcon = stripos($deviceType, 'laptop') !== false ? 'bi-laptop'
+                            : (stripos($deviceType, 'tablet') !== false ? 'bi-tablet' : 'bi-phone');
+                        ?>
+                        <li>
+                            <a class="repair-row" href="<?= e(url('customer/ticket.php?id=' . (int) $t['id'])) ?>">
+                                <span class="repair-row-icon" aria-hidden="true"><i class="bi <?= e($deviceIcon) ?>"></i></span>
+                                <span class="repair-row-main">
+                                    <strong><?= e($t['brand'] . ' ' . $t['model']) ?></strong>
+                                    <span class="problem-cell"><?= e(strlen($t['problem_description']) > 90 ? substr($t['problem_description'], 0, 87) . '…' : $t['problem_description']) ?></span>
+                                </span>
+                                <span class="repair-row-meta">
+                                    <span class="ticket-mono"><?= e($t['ticket_number']) ?></span>
+                                    <span>Booked <?= e(format_datetime($t['created_at'], 'M j, Y')) ?></span>
+                                </span>
+                                <span class="badge-status <?= e(status_badge_class($t['current_status'])) ?>"><?= e(status_label($t['current_status'])) ?></span>
+                                <i class="bi bi-chevron-right repair-row-chev" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
                 <?php if ($totalPages > 1): ?>
                     <div class="flex justify-between items-center px-3 py-2 border-t border-rapid-border text-sm">
                         <span class="text-rapid-muted"><?= (int) $total ?> ticket(s)</span>

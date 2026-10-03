@@ -124,8 +124,30 @@ require_once __DIR__ . '/../includes/navbar.php';
             </div>
         <?php endif; ?>
 
+        <?php
+        // A pending quote is the one thing the customer must act on, so it leads the page.
+        $quoteAwaiting = $quotationRow
+            && $ticket['current_status'] === 'awaiting_approval'
+            && ($quotationRow['status'] ?? '') === 'pending';
+        $renderQuote = static function () use ($quotationRow, $quoteAwaiting, $ticketId): void {
+            ?>
+            <section class="rapid-card customer-ticket-quote<?= $quoteAwaiting ? ' is-awaiting' : '' ?>" id="quotation">
+                <?php if ($quoteAwaiting): ?>
+                    <div class="quote-awaiting-intro">
+                        <h2>Your quotation is ready</h2>
+                        <p>Review the work below. We start repairing as soon as you approve.</p>
+                    </div>
+                <?php endif; ?>
+                <?php render_quotation_card($quotationRow, $quoteAwaiting, url('customer/quotation_print.php?id=' . $ticketId)); ?>
+                <?php render_notify_channels('You will be notified in-app, by email, and by SMS when the quote status changes.'); ?>
+            </section>
+            <?php
+        };
+        ?>
+
         <div class="customer-ticket-layout">
             <div class="customer-ticket-main">
+                <?php if ($quoteAwaiting) $renderQuote(); ?>
                 <section class="rapid-card">
                     <div class="customer-ticket-facts">
                         <div>
@@ -204,18 +226,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                     </section>
                 <?php endif; ?>
 
-                <?php if ($quotationRow): ?>
-                    <section class="rapid-card customer-ticket-quote" id="quotation">
-                        <?php
-                        render_quotation_card(
-                            $quotationRow,
-                            $ticket['current_status'] === 'awaiting_approval' && ($quotationRow['status'] ?? '') === 'pending',
-                            url('customer/quotation_print.php?id=' . $ticketId)
-                        );
-                        ?>
-                        <?php render_notify_channels('You will be notified in-app, by email, and by SMS when the quote status changes.'); ?>
-                    </section>
-                <?php endif; ?>
+                <?php if ($quotationRow && !$quoteAwaiting) $renderQuote(); ?>
             </div>
 
             <aside class="customer-ticket-side">

@@ -297,7 +297,8 @@
     function syncReview() {
       root.querySelectorAll('[data-review]').forEach(function (el) {
         var id = el.getAttribute('data-review');
-        var field = document.getElementById(id);
+        // Radio groups (e.g. device_type cards) have no single id; read them by name.
+        var field = document.getElementById(id) || (root.elements ? root.elements[id] : null);
         el.textContent = field && field.value ? field.value : '—';
       });
     }

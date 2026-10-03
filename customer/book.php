@@ -221,18 +221,26 @@ require_once __DIR__ . '/../includes/navbar.php';
             <div class="wizard-panel" data-step="1">
                 <h2 class="text-sm font-semibold text-rapid mb-3">Device information</h2>
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4">
-                    <div class="md:col-span-4">
-                        <label class="form-label" for="device_type">Device type <span class="text-red-700">*</span></label>
-                        <select class="form-select" id="device_type" name="device_type" required>
-                            <option value="">Select type</option>
+                    <fieldset class="md:col-span-12 device-type-picker">
+                        <legend class="form-label">Device type <span class="text-red-700">*</span></legend>
+                        <div class="device-type-grid">
                             <?php
-                            $types = ['Smartphone', 'Tablet', 'Laptop', 'Smartwatch', 'Other'];
-                            foreach ($types as $t):
+                            $types = [
+                                'Smartphone' => 'bi-phone',
+                                'Tablet' => 'bi-tablet',
+                                'Laptop' => 'bi-laptop',
+                                'Smartwatch' => 'bi-smartwatch',
+                                'Other' => 'bi-three-dots',
+                            ];
+                            foreach ($types as $t => $icon):
                             ?>
-                                <option value="<?= e($t) ?>" <?= $form['device_type'] === $t ? 'selected' : '' ?>><?= e($t) ?></option>
+                                <label class="device-type-opt">
+                                    <input type="radio" name="device_type" value="<?= e($t) ?>" required <?= $form['device_type'] === $t ? 'checked' : '' ?>>
+                                    <span><i class="bi <?= e($icon) ?>" aria-hidden="true"></i><?= e($t) ?></span>
+                                </label>
                             <?php endforeach; ?>
-                        </select>
-                    </div>
+                        </div>
+                    </fieldset>
                     <div class="md:col-span-4">
                         <label class="form-label" for="brand">Brand <span class="text-red-700">*</span></label>
                         <input type="text" class="form-control" id="brand" name="brand" required maxlength="100"

@@ -1492,3 +1492,457 @@ body.landing-page .rapid-footer strong {
     transform: rotateX(10deg) rotateY(-26deg) rotateZ(3deg) translateZ(150px);
   }
 }
+
+/* ==========================================================================
+   Redesign (Oct 2026): grid hero, enhanced 3D phone, track strip,
+   flat 16px cards. Overrides the rules above.
+   ========================================================================== */
+.lp-hero {
+  background: #050B16;
+  padding-bottom: 140px;
+}
+
+.lp-hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 65% 45%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 65% 45%, #000 30%, transparent 75%);
+}
+
+.lp-hero-glow {
+  position: absolute;
+  width: 720px;
+  height: 720px;
+  right: -120px;
+  top: -80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 98, 217, 0.42), rgba(0, 98, 217, 0) 62%);
+}
+
+/* —— Enhanced phone: titanium frame, buttons, live-activity island —— */
+.lp-phone-wrap {
+  width: 200px;
+  height: 406px;
+}
+
+.lp-phone {
+  --w: 200px;
+  --h: 406px;
+  --d: 20px;
+  --r: 44px;
+}
+
+.lp-phone-front {
+  padding: 4px;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #c9d2de 0%, #6f7c8f 18%, #2c3646 40%, #8d99aa 62%, #3a4556 100%);
+  box-shadow:
+    0 50px 90px rgba(0, 0, 0, 0.55),
+    0 0 60px rgba(61, 148, 253, 0.22);
+}
+
+.lp-phone-glass {
+  inset: 4px;
+  border-radius: 40px;
+  border: 6px solid #03060c;
+  box-sizing: border-box;
+  background:
+    radial-gradient(140% 70% at 50% -10%, rgba(61, 148, 253, 0.32), transparent 58%),
+    linear-gradient(180deg, #0a1630, #071022 55%, #050c1a);
+}
+
+.lp-phone-right {
+  background: linear-gradient(180deg, #aeb9c7 0%, #4b5667 14%, #262f3c 55%, #7d8a9b 100%);
+}
+
+.lp-phone-right::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 150px;
+  height: 30px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #9aa6b6, #4d5868);
+}
+
+.lp-phone-right::after {
+  top: 76px;
+  height: 56px;
+  background: linear-gradient(180deg, #d5dce6, #6b788a);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.lp-phone-bottom {
+  background: linear-gradient(90deg, #2a3443, #8592a4 50%, #2a3443);
+}
+
+.lp-phone-statusbar {
+  height: 38px;
+  padding: 10px 16px 4px;
+}
+
+.lp-island {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 96px;
+  height: 24px;
+  padding: 0 6px 0 7px;
+  box-sizing: border-box;
+  background: #000;
+  animation: lpIsland 6s ease-in-out infinite;
+}
+
+.lp-island-ring {
+  width: 15px;
+  height: 15px;
+}
+
+.lp-island b {
+  font: 700 9px "IBM Plex Mono", ui-monospace, monospace;
+  color: #7DB8FF;
+}
+
+.lp-phone-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 14px 14px;
+}
+
+.lp-app-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lp-app-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #86EFAC;
+}
+
+.lp-app-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34D399;
+  animation: lpPing 1.8s ease-out infinite;
+}
+
+.lp-tcard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.lp-tcard .lp-phone-ticket {
+  margin: 0;
+}
+
+.lp-tstatus {
+  margin: 0;
+  font: 800 19px "Exo 2", system-ui, sans-serif;
+  line-height: 1.1;
+}
+
+.lp-teta {
+  margin: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #9EC5FF;
+}
+
+.lp-segs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.lp-segs span {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lp-segs .on {
+  background: #3D94FD;
+}
+
+.lp-segs .now {
+  background: linear-gradient(90deg, #3D94FD 62%, rgba(255, 255, 255, 0.12) 62%);
+}
+
+.lp-seglbl {
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.lp-tech {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.lp-tech b {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1A3A6B;
+  color: #fff;
+  font-size: 8.5px;
+}
+
+.lp-tech strong {
+  display: block;
+  font-size: 10px;
+  color: #fff;
+}
+
+.lp-tquote {
+  gap: 4px;
+}
+
+.lp-tquote-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.lp-tquote-row .is-ok {
+  font-weight: 800;
+  color: #86EFAC;
+}
+
+.lp-tquote-amt {
+  margin: 0;
+  font: 800 15px "Exo 2", system-ui, sans-serif;
+}
+
+.lp-app-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border-radius: 12px;
+  background: #0062D9;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+/* Floating notification layered in front of the phone */
+.lp-toast {
+  position: absolute;
+  z-index: 9;
+  right: 0;
+  top: 64px;
+  width: 220px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 13px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #5B6B82;
+  font-size: 11.5px;
+  line-height: 1.35;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.4);
+  transform: translateZ(120px);
+  animation: lpToast 7s ease-in-out infinite;
+}
+
+.lp-toast b {
+  display: block;
+  font-size: 12.5px;
+  color: #091C39;
+}
+
+.lp-toast-ico {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.lp-toast-ico svg {
+  width: 15px;
+  height: 15px;
+}
+
+@keyframes lpIsland {
+  0%, 100% { width: 96px; }
+  45%, 55% { width: 116px; }
+}
+
+@keyframes lpToast {
+  0%, 8% { opacity: 0; margin-top: -10px; }
+  16%, 84% { opacity: 1; margin-top: 0; }
+  92%, 100% { opacity: 0; margin-top: -10px; }
+}
+
+/* —— Track strip overlapping the hero —— */
+.lp-track-strip {
+  position: relative;
+  z-index: 3;
+  margin-top: -84px;
+  /* hero shows through the overlap; page grey below it */
+  background: linear-gradient(to bottom, transparent 84px, #F4F6FA 84px);
+}
+
+.lp-track {
+  margin: 0;
+  max-width: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 20px;
+  padding: 24px 28px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #D5DDE8;
+  box-shadow: 0 24px 60px rgba(5, 11, 22, 0.18);
+}
+
+.lp-track::before {
+  display: none;
+}
+
+.lp-track-head {
+  flex: 1 1 220px;
+  display: block;
+  margin: 0;
+}
+
+.lp-track h2 {
+  font-size: 1.375rem;
+}
+
+.lp-track-field {
+  flex: 1 1 220px;
+}
+
+.lp-track .form-control {
+  min-height: 48px;
+}
+
+.lp-track .btn {
+  min-height: 48px;
+  flex: 0 0 auto;
+}
+
+.lp-track .ticket-input {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+/* —— Sections: flat 16px cards, bar-topped steps —— */
+.lp-services {
+  margin-top: 0;
+  padding-top: 104px;
+}
+
+.lp-service,
+.lp-contact-card {
+  border-radius: 16px;
+}
+
+.lp-service {
+  padding: 28px;
+}
+
+.lp-service:hover {
+  transform: translateY(-4px);
+}
+
+.lp-service-ico {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #E1EDFF;
+  color: #004FB0;
+  box-shadow: none;
+  transform: none;
+}
+
+.lp-service-ico svg {
+  width: 28px;
+  height: 28px;
+}
+
+.lp-process {
+  background: #fff;
+  border-top: 1px solid #E2E8F0;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.lp-step {
+  padding: 20px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 6px solid #0062D9;
+  box-shadow: none;
+}
+
+.lp-step:nth-child(3) { border-top-color: #3D85F0; }
+.lp-step:nth-child(4) { border-top-color: #94BCF5; }
+
+.lp-step:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.lp-step-num {
+  position: static;
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 639px) {
+  .lp-phone-wrap {
+    margin-left: -100px;
+  }
+
+  .lp-toast {
+    display: none;
+  }
+
+  .lp-track-strip {
+    margin-top: -60px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-island,
+  .lp-toast,
+  .lp-app-live i {
+    animation: none !important;
+  }
+}

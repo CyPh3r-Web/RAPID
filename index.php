@@ -23,16 +23,8 @@ require_once __DIR__ . '/includes/navbar.php';
 <main class="lp">
     <section class="lp-hero">
         <div class="lp-hero-bg" aria-hidden="true" data-lp-hero-bg>
-            <div class="lp-dg-wash">
-                <span class="lp-dg-streak lp-dg-streak-1"></span>
-                <span class="lp-dg-streak lp-dg-streak-2"></span>
-                <span class="lp-dg-streak lp-dg-streak-3"></span>
-                <span class="lp-dg-streak lp-dg-streak-4"></span>
-                <span class="lp-dg-streak lp-dg-streak-5"></span>
-            </div>
-            <div class="lp-dg-noise"></div>
-            <div class="lp-dg-dots"></div>
-            <div class="lp-dg-highlight"></div>
+            <div class="lp-hero-grid"></div>
+            <div class="lp-hero-glow"></div>
         </div>
 
         <div class="lp-container lp-hero-layout">
@@ -60,7 +52,7 @@ require_once __DIR__ . '/includes/navbar.php';
                             Book a repair
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </a>
-                        <a class="lp-btn lp-btn-ghost" href="<?= e(url('auth/login.php')) ?>">Sign in</a>
+                        <a class="lp-btn lp-btn-ghost" href="#track-panel">Track a repair</a>
                     <?php endif; ?>
                 </div>
                 <ul class="lp-trust">
@@ -127,7 +119,10 @@ require_once __DIR__ . '/includes/navbar.php';
                                 <div class="lp-phone-glass">
                                     <div class="lp-phone-statusbar">
                                         <span class="lp-sb-time">9:41</span>
-                                        <span class="lp-island"><i></i></span>
+                                        <span class="lp-island">
+                                            <svg class="lp-island-ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="3"/><circle cx="10" cy="10" r="7" fill="none" stroke="#3D94FD" stroke-width="3" stroke-dasharray="27.3 44" stroke-linecap="round" transform="rotate(-90 10 10)"/></svg>
+                                            <b>62%</b>
+                                        </span>
                                         <span class="lp-sb-icons">
                                             <i class="lp-sb-sig"></i>
                                             <b class="lp-sb-net">5G</b>
@@ -135,31 +130,36 @@ require_once __DIR__ . '/includes/navbar.php';
                                         </span>
                                     </div>
                                     <div class="lp-phone-ui">
-                                        <div class="lp-phone-app">
-                                            <p class="lp-phone-brand">RAPID · Live status</p>
-                                            <p class="lp-phone-ticket">RPR-2026-000142</p>
-                                            <p class="lp-phone-device">iPhone 15 Pro · Deep Blue</p>
+                                        <div class="lp-app-top">
+                                            <span class="lp-phone-brand">RAPID · Live status</span>
+                                            <span class="lp-app-live"><i></i>Live</span>
                                         </div>
-                                        <div class="lp-phone-status">
-                                            <span class="lp-pulse"></span>
-                                            Repairing · 62%
+                                        <div class="lp-tcard">
+                                            <div>
+                                                <p class="lp-phone-ticket">RPR-2026-000142</p>
+                                                <p class="lp-phone-device">iPhone 15 Pro · Deep Blue</p>
+                                            </div>
+                                            <p class="lp-tstatus">Repairing</p>
+                                            <p class="lp-teta">Ready today · est. 5:00 PM</p>
+                                            <div class="lp-segs"><span class="on"></span><span class="on"></span><span class="now"></span><span></span><span></span></div>
+                                            <div class="lp-seglbl"><span>Received</span><span>Repair</span><span>Pickup</span></div>
                                         </div>
-                                        <div class="lp-phone-bar"><span></span></div>
-                                        <ul class="lp-phone-steps">
-                                            <li class="is-done">Received</li>
-                                            <li class="is-done">Diagnosed</li>
-                                            <li class="is-now">Repairing</li>
-                                            <li>Ready for pickup</li>
-                                        </ul>
-                                        <div class="lp-phone-foot">
-                                            <span class="lp-phone-foot-dot"></span>
-                                            Updated just now
+                                        <div class="lp-tech"><b>BT</b><span><strong>Ben Torres</strong>Your technician</span></div>
+                                        <div class="lp-tcard lp-tquote">
+                                            <div class="lp-tquote-row"><span>Quotation</span><span class="is-ok">Approved</span></div>
+                                            <p class="lp-tquote-amt">₱3,450.00</p>
                                         </div>
+                                        <div class="lp-app-btn">View ticket</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="lp-phone-shadow" aria-hidden="true"></div>
+                        </div>
+
+                        <div class="lp-toast" data-lp-depth="1.1" aria-hidden="true">
+                            <span class="lp-toast-ico"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                            <span><b>Quote approved</b>Repair started on RPR-2026-000142 · just now</span>
                         </div>
 
                         <div class="lp-chip-card lp-chip-a" data-lp-depth="0.8">
@@ -198,31 +198,30 @@ require_once __DIR__ . '/includes/navbar.php';
                     </div>
                 </div>
 
-                <div class="lp-track" id="track-panel">
-                    <div class="lp-track-head">
-                        <div>
-                            <h2>Track my repair</h2>
-                            <p>Enter your ticket number. No login required.</p>
-                        </div>
-                        <span class="lp-track-badge">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1016 0A8 8 0 004 12z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v4l2.5 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                            Guest access
-                        </span>
-                    </div>
-                    <form method="get" action="<?= e(url('track.php')) ?>" data-disable-on-submit>
-                        <label class="form-label" for="ticket_number">Ticket number</label>
-                        <input type="text" class="form-control mb-3" id="ticket_number" name="ticket"
-                               placeholder="RPR-2026-000001" required
-                               pattern="RPR-\d{4}-\d{6}" title="Format: RPR-YYYY-000001">
-                        <label class="form-label" for="contact">Phone or email</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="contact" name="contact"
-                                   placeholder="Used on the booking" required>
-                            <button class="btn btn-rapid-primary" type="submit">Track</button>
-                        </div>
-                    </form>
-                </div>
             </div>
+        </div>
+    </section>
+
+    <section class="lp-track-strip" aria-labelledby="trackTitle">
+        <div class="lp-container">
+            <form class="lp-track" id="track-panel" method="get" action="<?= e(url('track.php')) ?>" data-disable-on-submit>
+                <div class="lp-track-head">
+                    <h2 id="trackTitle">Track my repair</h2>
+                    <p>Ticket number and contact. No login needed.</p>
+                </div>
+                <div class="lp-track-field">
+                    <label class="form-label" for="ticket_number">Ticket number</label>
+                    <input type="text" class="form-control ticket-input" id="ticket_number" name="ticket"
+                           placeholder="RPR-2026-000001" required
+                           pattern="RPR-\d{4}-\d{6}" title="Format: RPR-YYYY-000001">
+                </div>
+                <div class="lp-track-field">
+                    <label class="form-label" for="contact">Phone or email</label>
+                    <input type="text" class="form-control" id="contact" name="contact"
+                           placeholder="Used on the booking" required>
+                </div>
+                <button class="btn btn-rapid-primary" type="submit">Track repair</button>
+            </form>
         </div>
     </section>
 
@@ -291,54 +290,21 @@ require_once __DIR__ . '/includes/navbar.php';
             <ol class="lp-steps">
                 <li class="lp-step" data-lp-reveal>
                     <span class="lp-step-num">01</span>
-                    <div class="lp-step-art" aria-hidden="true">
-                        <svg viewBox="0 0 120 88">
-                            <rect x="18" y="16" width="84" height="56" rx="10" fill="#E8F2FE" stroke="#091C39" stroke-width="1.6"/>
-                            <rect x="28" y="28" width="40" height="8" rx="4" fill="#091C39" opacity="0.2"/>
-                            <rect x="28" y="42" width="64" height="6" rx="3" fill="#0072FC" opacity="0.35"/>
-                            <rect x="28" y="54" width="52" height="6" rx="3" fill="#0072FC" opacity="0.2"/>
-                            <circle cx="96" cy="22" r="10" fill="#0072FC"/>
-                            <path d="M92 22l3 3 6-7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
-                        </svg>
-                    </div>
                     <h3>Book &amp; document</h3>
                     <p>Submit device details with before-repair photos or videos so the bench sees what you see.</p>
                 </li>
                 <li class="lp-step" data-lp-reveal>
                     <span class="lp-step-num">02</span>
-                    <div class="lp-step-art" aria-hidden="true">
-                        <svg viewBox="0 0 120 88">
-                            <rect x="22" y="14" width="76" height="52" rx="6" fill="#091C39"/>
-                            <path d="M30 48c8-16 12-8 18-8s8-16 16-16 10 20 18 20 8-10 16-6" fill="none" stroke="#3D94FD" stroke-width="2"/>
-                            <rect x="36" y="70" width="48" height="6" rx="3" fill="#D5DDE8"/>
-                        </svg>
-                    </div>
                     <h3>Diagnose &amp; quote</h3>
                     <p>Technicians inspect, diagnose, and send a digital quotation you can approve or decline.</p>
                 </li>
                 <li class="lp-step" data-lp-reveal>
                     <span class="lp-step-num">03</span>
-                    <div class="lp-step-art" aria-hidden="true">
-                        <svg viewBox="0 0 120 88">
-                            <circle cx="60" cy="40" r="26" fill="none" stroke="#D5DDE8" stroke-width="8"/>
-                            <circle cx="60" cy="40" r="26" fill="none" stroke="#0072FC" stroke-width="8" stroke-dasharray="120 164" stroke-linecap="round" transform="rotate(-90 60 40)"/>
-                            <text x="60" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="#091C39" font-family="IBM Plex Mono, monospace">64%</text>
-                        </svg>
-                    </div>
                     <h3>Repair &amp; notify</h3>
                     <p>Follow status updates from approval through repair — no chasing the counter for news.</p>
                 </li>
                 <li class="lp-step" data-lp-reveal>
                     <span class="lp-step-num">04</span>
-                    <div class="lp-step-art" aria-hidden="true">
-                        <svg viewBox="0 0 120 88">
-                            <rect x="34" y="18" width="52" height="52" rx="12" fill="#E8F2FE" stroke="#091C39" stroke-width="1.6"/>
-                            <path d="M60 30v16M52 38h16" stroke="#0072FC" stroke-width="2.4" stroke-linecap="round"/>
-                            <path d="M44 62h32" stroke="#091C39" stroke-width="1.6" stroke-linecap="round" opacity="0.35"/>
-                            <circle cx="86" cy="26" r="12" fill="#059669"/>
-                            <path d="M81 26l3.2 3.2 7-7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
-                        </svg>
-                    </div>
                     <h3>Pickup &amp; warranty</h3>
                     <p>Completed jobs open a warranty window with linked claims if anything comes back.</p>
                 </li>

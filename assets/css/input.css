@@ -3550,6 +3550,367 @@
     color: #091C39;
   }
 
+  /* Auth (login / register): navy brand panel + flat form */
+  .auth-brand {
+    background: #091C39;
+    padding: 40px 56px;
+    gap: 40px;
+  }
+  .auth-brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 48px 48px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 30% 70%, #000 20%, transparent 75%);
+    mask-image: radial-gradient(ellipse 80% 70% at 30% 70%, #000 20%, transparent 75%);
+  }
+  .auth-brand::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 560px;
+    height: 560px;
+    left: -160px;
+    bottom: -200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 98, 217, 0.5), rgba(0, 98, 217, 0) 62%);
+  }
+  .auth-brand-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    font: 800 22px 'Exo 2', system-ui, sans-serif;
+    letter-spacing: 0.06em;
+  }
+  .auth-brand-logo:hover {
+    color: #fff;
+  }
+  .auth-brand-logo img {
+    width: 44px;
+    height: 44px;
+    padding: 4px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: #fff;
+    object-fit: contain;
+  }
+  .auth-brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    max-width: 460px;
+    padding: 0;
+  }
+  .auth-brand-copy h2 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+  .auth-points {
+    gap: 18px;
+  }
+  .auth-points li {
+    gap: 12px;
+    font-size: 0.9375rem;
+    color: #C7D4E6;
+  }
+  .auth-points strong {
+    display: block;
+    color: #fff;
+  }
+  .auth-point-ico {
+    width: 36px;
+    height: 36px;
+    color: #7DB8FF;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  .auth-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 380px;
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .auth-preview-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .auth-preview-no {
+    font: 700 13px 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  .auth-preview-status {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #86EFAC;
+  }
+  .auth-preview-device {
+    font-size: 13px;
+    color: #C7D4E6;
+  }
+  .auth-preview-segs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .auth-preview-segs span {
+    height: 6px;
+    border-radius: 3px;
+    background: #3D94FD;
+  }
+  .auth-preview-segs .is-off {
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .auth-preview-time,
+  .auth-brand-foot {
+    font-size: 0.8125rem;
+    color: #8FA0B8;
+  }
+  .auth-main {
+    background: #fff;
+  }
+  .auth-panel {
+    max-width: 440px;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  .auth-panel-wide {
+    max-width: 600px;
+  }
+  .auth-toolbar-link {
+    min-height: 44px;
+    color: #0062D9;
+    font-weight: 700;
+  }
+  .auth-tabs {
+    padding: 4px;
+    gap: 4px;
+    border: 0;
+    border-radius: 12px;
+    background: #EDF1F6;
+  }
+  .auth-tabs a {
+    min-height: 42px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    color: #475569;
+  }
+  .auth-tabs a.is-active {
+    box-shadow: 0 1px 3px rgba(9, 28, 57, 0.12);
+  }
+  .auth-panel h1 {
+    font-size: 2.125rem;
+  }
+  .auth-lead {
+    color: #5B6B82;
+  }
+  .auth-alert {
+    border-radius: 10px;
+  }
+  .auth-panel .form-control {
+    min-height: 48px;
+    border-radius: 10px;
+    background: #fff;
+    border-color: #C5D0DE;
+  }
+  .auth-panel .form-control:focus {
+    border-color: #0062D9;
+    box-shadow: 0 0 0 3px rgba(0, 98, 217, 0.16);
+  }
+  .auth-password-toggle {
+    width: 44px;
+    height: 44px;
+    right: 2px;
+    border-radius: 8px;
+    color: #5B6B82;
+  }
+  .auth-submit {
+    min-height: 50px;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+  .auth-footnote a {
+    color: #0062D9;
+  }
+
+  /* Customer: My Repairs card list */
+  .repair-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .repair-list li + li {
+    border-top: 1px solid #EDF1F6;
+  }
+  .repair-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    padding: 16px 20px;
+    color: #102035;
+  }
+  .repair-row:hover {
+    color: #102035;
+    background: #F8FAFC;
+  }
+  .repair-row-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    background: #E1EDFF;
+    color: #004FB0;
+  }
+  .repair-row-main {
+    flex: 1 1 240px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .repair-row-main strong {
+    font-size: 1rem;
+    color: #091C39;
+  }
+  .repair-row-main .problem-cell {
+    font-size: 0.875rem;
+    color: #5B6B82;
+  }
+  .repair-row-meta {
+    flex: 0 1 190px;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8125rem;
+    color: #5B6B82;
+  }
+  .repair-row-chev {
+    color: #5B6B82;
+  }
+
+  /* Customer: pending quote leads the tracker */
+  .customer-ticket-quote.is-awaiting {
+    border: 2px solid #0062D9;
+  }
+  .quote-awaiting-intro {
+    margin-bottom: 16px;
+  }
+  .quote-awaiting-intro h2 {
+    margin: 0 0 4px;
+    font-size: 1.25rem;
+  }
+  .quote-awaiting-intro p {
+    margin: 0;
+    color: #5B6B82;
+  }
+  .customer-ticket-quote.is-awaiting .quote-actions .btn {
+    min-height: 48px;
+    flex: 1 1 180px;
+  }
+
+  /* Customer: active warranty tiles */
+  .warranty-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .warranty-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+  }
+  .warranty-tile-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #EDF1F6;
+    overflow: hidden;
+  }
+  .warranty-tile-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: #0062D9;
+  }
+  .warranty-tile-bar span.is-expiring {
+    background: #D97706;
+  }
+
+  /* Customer: device type cards on Book a Repair */
+  .device-type-picker {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+  }
+  .device-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .device-type-opt {
+    position: relative;
+    display: block;
+    cursor: pointer;
+  }
+  .device-type-opt input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .device-type-opt span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 84px;
+    border: 1.5px solid #D5DDE8;
+    border-radius: 10px;
+    background: #fff;
+    color: #334155;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .device-type-opt span i {
+    font-size: 1.4rem;
+  }
+  .device-type-opt:hover span {
+    border-color: #091C39;
+  }
+  .device-type-opt input:checked + span {
+    border-color: #0062D9;
+    background: #EEF5FF;
+    color: #004FB0;
+  }
+  .device-type-opt input:focus-visible + span {
+    outline: 2px solid #0062D9;
+    outline-offset: 2px;
+  }
+
   /* Customer dashboard: active repair card */
   .active-repair-icon {
     width: 48px;
