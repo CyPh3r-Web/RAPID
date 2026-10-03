@@ -38,7 +38,9 @@ DELETE FROM `notifications`;
 DELETE FROM `warranty_claims`;
 DELETE FROM `warranties`;
 DELETE FROM `repair_status_history`;
+DELETE FROM `quotation_items`;
 DELETE FROM `quotations`;
+DELETE FROM `parts`;
 DELETE FROM `diagnoses`;
 DELETE FROM `ai_suggestions`;
 DELETE FROM `device_media`;
@@ -54,7 +56,9 @@ ALTER TABLE `notifications` AUTO_INCREMENT = 1;
 ALTER TABLE `warranty_claims` AUTO_INCREMENT = 1;
 ALTER TABLE `warranties` AUTO_INCREMENT = 1;
 ALTER TABLE `repair_status_history` AUTO_INCREMENT = 1;
+ALTER TABLE `quotation_items` AUTO_INCREMENT = 1;
 ALTER TABLE `quotations` AUTO_INCREMENT = 1;
+ALTER TABLE `parts` AUTO_INCREMENT = 1;
 ALTER TABLE `diagnoses` AUTO_INCREMENT = 1;
 ALTER TABLE `ai_suggestions` AUTO_INCREMENT = 1;
 ALTER TABLE `device_media` AUTO_INCREMENT = 1;
@@ -235,6 +239,31 @@ INSERT INTO `diagnoses` (`ticket_id`, `technician_id`, `diagnosis`, `recommended
 (20, 1, 'Battery swollen against the display. No other damage.', 'Replace battery, pressure-test the chassis.', '2025-10-18 17:00:00', '2025-10-15 15:00:00');
 
 -- ------------------------------------------------------------
+-- parts catalog
+-- ------------------------------------------------------------
+INSERT INTO `parts` (`sku`, `name`, `category`, `unit_price`, `notes`, `is_active`, `created_at`) VALUES
+('BAT-IPA5',   'iPad Air 5 battery (OEM-grade)', 'Tablet', 2200.00, 'Includes cycle test.', 1, '2026-08-01 09:00:00'),
+('TOP-MBA',    'MacBook Air top case + keyboard', 'Laptop', 9800.00, NULL, 1, '2026-08-01 09:00:00'),
+('TPAD-MBA',   'Trackpad assembly', 'Laptop', 3000.00, NULL, 1, '2026-08-01 09:00:00'),
+('FAN-CPU',    'CPU cooling fan', 'Laptop', 1800.00, NULL, 1, '2026-08-01 09:00:00'),
+('GLASS-BG',   'Back glass + adhesive kit', 'Phone', 2500.00, NULL, 1, '2026-08-01 09:00:00'),
+('DISP-TS9',   'Tab S9 display assembly', 'Tablet', 7200.00, NULL, 1, '2026-08-01 09:00:00'),
+('PEN-SPEN',   'S Pen (genuine)', 'Accessory', 1700.00, NULL, 1, '2026-08-01 09:00:00'),
+('BAT-AWSE',   'Apple Watch SE battery', 'Wearable', 2800.00, NULL, 1, '2026-08-01 09:00:00'),
+('SPK-DRV',    'Speaker driver + foam pad', 'Audio', 1900.00, NULL, 1, '2026-08-01 09:00:00'),
+('BAT-LM10',   'Lenovo Tab M10 battery', 'Tablet', 1600.00, NULL, 1, '2026-08-01 09:00:00'),
+('SPK-EAR',    'Earpiece speaker', 'Phone', 450.00, NULL, 1, '2026-08-01 09:00:00'),
+('SPK-LOUD',   'Loudspeaker', 'Phone', 650.00, NULL, 1, '2026-08-01 09:00:00'),
+('TPAD-XPS13', 'XPS 13 trackpad + cable', 'Laptop', 4200.00, NULL, 1, '2026-08-01 09:00:00'),
+('OLED-S21',   'Galaxy S21 OLED panel', 'Phone', 6500.00, NULL, 1, '2026-08-01 09:00:00'),
+('CHG-MATE',   'MatePad charging board', 'Tablet', 950.00, NULL, 1, '2026-08-01 09:00:00'),
+('HDMI-SW',    'Switch dock HDMI board', 'Console', 2100.00, NULL, 1, '2026-08-01 09:00:00'),
+('BAT-IP11',   'iPhone 11 battery (genuine-grade)', 'Phone', 1800.00, NULL, 1, '2026-08-01 09:00:00'),
+('LCD-IP13',   'iPhone 13 LCD digitizer', 'Phone', 4200.00, 'In-cell display assembly.', 1, '2026-08-01 09:00:00'),
+('PORT-USB-C', 'USB-C charging port flex', 'Phone', 850.00, NULL, 1, '2026-08-01 09:00:00'),
+('CAM-IP14',   'iPhone 14 Pro camera module', 'Phone', 5600.00, NULL, 1, '2026-08-01 09:00:00');
+
+-- ------------------------------------------------------------
 -- quotations
 -- ------------------------------------------------------------
 INSERT INTO `quotations` (
@@ -256,6 +285,30 @@ INSERT INTO `quotations` (
 (18, 1,  700.00,   950.00,  0.00,  1650.00, 'MatePad charging board.', 'approved', '2025-12-18', '2025-12-12 10:00:00'),
 (19, 3,  900.00,  2100.00,  0.00,  3000.00, 'Switch dock HDMI board.', 'approved', '2025-11-26', '2025-11-20 11:00:00'),
 (20, 1,  800.00,  1800.00,  0.00,  2600.00, 'iPhone 11 battery (genuine-grade).', 'approved', '2025-10-22', '2025-10-16 09:00:00');
+
+-- ------------------------------------------------------------
+-- quotation_items (ids follow insert order above: 1..15)
+-- ------------------------------------------------------------
+INSERT INTO `quotation_items` (
+  `quotation_id`, `part_id`, `description`, `quantity`, `unit_price`, `line_total`, `sort_order`
+) VALUES
+(1,  1,  'iPad Air 5 battery (OEM-grade)', 1.00, 2200.00, 2200.00, 1),
+(2,  2,  'MacBook Air top case + keyboard', 1.00, 9800.00, 9800.00, 1),
+(2,  3,  'Trackpad assembly', 1.00, 3000.00, 3000.00, 2),
+(3,  4,  'CPU cooling fan', 1.00, 1800.00, 1800.00, 1),
+(4,  5,  'Back glass + adhesive kit', 1.00, 2500.00, 2500.00, 1),
+(5,  6,  'Tab S9 display assembly', 1.00, 7200.00, 7200.00, 1),
+(5,  7,  'S Pen (genuine)', 1.00, 1700.00, 1700.00, 2),
+(6,  8,  'Apple Watch SE battery', 1.00, 2800.00, 2800.00, 1),
+(7,  9,  'Speaker driver + foam pad', 1.00, 1900.00, 1900.00, 1),
+(9,  10, 'Lenovo Tab M10 battery', 1.00, 1600.00, 1600.00, 1),
+(10, 11, 'Earpiece speaker', 1.00, 450.00, 450.00, 1),
+(10, 12, 'Loudspeaker', 1.00, 650.00, 650.00, 2),
+(11, 13, 'XPS 13 trackpad + cable', 1.00, 4200.00, 4200.00, 1),
+(12, 14, 'Galaxy S21 OLED panel', 1.00, 6500.00, 6500.00, 1),
+(13, 15, 'MatePad charging board', 1.00, 950.00, 950.00, 1),
+(14, 16, 'Switch dock HDMI board', 1.00, 2100.00, 2100.00, 1),
+(15, 17, 'iPhone 11 battery (genuine-grade)', 1.00, 1800.00, 1800.00, 1);
 
 -- ------------------------------------------------------------
 -- repair_status_history

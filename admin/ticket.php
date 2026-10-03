@@ -66,6 +66,9 @@ $diagnosisRow = $diagnosis->fetch() ?: null;
 $quotation = db()->prepare('SELECT * FROM quotations WHERE ticket_id = ? ORDER BY id DESC LIMIT 1');
 $quotation->execute([$ticketId]);
 $quotationRow = $quotation->fetch() ?: null;
+if ($quotationRow) {
+    $quotationRow['items'] = get_quotation_items((int) $quotationRow['id']);
+}
 
 $nextStatuses = allowed_status_transitions($ticket['current_status']);
 
@@ -138,7 +141,7 @@ require_once __DIR__ . '/../includes/navbar.php';
 
                 <?php if ($quotationRow): ?>
                     <div class="rapid-card mb-3">
-                        <?php render_quotation_card($quotationRow, false); ?>
+                        <?php render_quotation_card($quotationRow, false, url('admin/quotation_print.php?id=' . $ticketId)); ?>
                     </div>
                 <?php endif; ?>
             </div>

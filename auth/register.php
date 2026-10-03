@@ -50,20 +50,22 @@ $authTab = 'register';
 
             <?php require __DIR__ . '/../includes/auth_tabs.php'; ?>
 
-            <h1>Create your account</h1>
-            <p class="auth-lead">Register to book repairs and track progress online.</p>
+            <header class="auth-heading">
+                <h1>Create your account</h1>
+                <p class="auth-lead">Register once — then book repairs and follow every update from your phone.</p>
+            </header>
 
             <?php if ($error !== ''): ?>
-                <div class="alert alert-danger py-2 text-sm" role="alert">
+                <div class="auth-alert" role="alert">
                     <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
                     <span><?= e($error) ?></span>
                 </div>
             <?php endif; ?>
 
-            <form method="post" action="" data-disable-on-submit autocomplete="on">
+            <form class="auth-form" method="post" action="" data-disable-on-submit autocomplete="on">
                 <?= csrf_field() ?>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="auth-grid">
+                    <div class="auth-field">
                         <label class="form-label" for="first_name">First name</label>
                         <div class="auth-input">
                             <i class="bi bi-person" aria-hidden="true"></i>
@@ -72,7 +74,7 @@ $authTab = 'register';
                                    value="<?= e($_POST['first_name'] ?? '') ?>">
                         </div>
                     </div>
-                    <div>
+                    <div class="auth-field">
                         <label class="form-label" for="last_name">Last name</label>
                         <div class="auth-input">
                             <i class="bi bi-person" aria-hidden="true"></i>
@@ -81,7 +83,7 @@ $authTab = 'register';
                                    value="<?= e($_POST['last_name'] ?? '') ?>">
                         </div>
                     </div>
-                    <div>
+                    <div class="auth-field">
                         <label class="form-label" for="email">Email</label>
                         <div class="auth-input">
                             <i class="bi bi-envelope" aria-hidden="true"></i>
@@ -90,7 +92,7 @@ $authTab = 'register';
                                    value="<?= e($_POST['email'] ?? '') ?>" autocomplete="email">
                         </div>
                     </div>
-                    <div>
+                    <div class="auth-field">
                         <label class="form-label" for="phone">Phone</label>
                         <div class="auth-input">
                             <i class="bi bi-telephone" aria-hidden="true"></i>
@@ -99,11 +101,11 @@ $authTab = 'register';
                                    value="<?= e($_POST['phone'] ?? '') ?>">
                         </div>
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="form-label" for="address">Address <span class="text-rapid-muted font-normal">(optional)</span></label>
+                    <div class="auth-field auth-field-full">
+                        <label class="form-label" for="address">Address <span class="auth-optional">(optional)</span></label>
                         <textarea class="form-control" id="address" name="address" rows="2" placeholder="Street, city"><?= e($_POST['address'] ?? '') ?></textarea>
                     </div>
-                    <div>
+                    <div class="auth-field">
                         <label class="form-label" for="password">Password</label>
                         <div class="auth-input">
                             <i class="bi bi-lock" aria-hidden="true"></i>
@@ -113,9 +115,9 @@ $authTab = 'register';
                                 <i class="bi bi-eye" aria-hidden="true"></i>
                             </button>
                         </div>
-                        <div class="form-text">At least 8 characters.</div>
+                        <p class="auth-hint">At least 8 characters.</p>
                     </div>
-                    <div>
+                    <div class="auth-field">
                         <label class="form-label" for="password_confirm">Confirm password</label>
                         <div class="auth-input">
                             <i class="bi bi-lock" aria-hidden="true"></i>
@@ -127,7 +129,7 @@ $authTab = 'register';
                         </div>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-rapid-primary btn-lg w-full mt-5">Create account</button>
+                <button type="submit" class="btn btn-rapid-primary btn-lg w-full auth-submit">Create account</button>
             </form>
 
             <p class="auth-footnote">

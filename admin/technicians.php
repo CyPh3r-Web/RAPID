@@ -54,7 +54,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <h1>Technicians</h1>
                 <p>Manage technician accounts, specialization, and availability.</p>
             </div>
-            <a class="btn btn-rapid-primary btn-sm" href="<?= e(url('admin/technician_form.php')) ?>">Add technician</a>
+            <a class="btn btn-rapid-primary btn-sm" data-modal-form href="<?= e(url('admin/technician_form.php')) ?>">Add technician</a>
         </div>
 
         <form method="get" class="filter-bar">
@@ -108,7 +108,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                                         </span>
                                     </td>
                                     <td class="text-right">
-                                        <a class="btn btn-sm btn-rapid-outline" href="<?= e(url('admin/technician_form.php?id=' . (int) $t['id'])) ?>">Edit</a>
+                                        <a class="btn btn-sm btn-rapid-outline" data-modal-form href="<?= e(url('admin/technician_form.php?id=' . (int) $t['id'])) ?>">Edit</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

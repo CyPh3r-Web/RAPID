@@ -17,6 +17,8 @@ switch ($role) {
             ['key' => 'claims', 'label' => 'Warranty Claims', 'href' => 'admin/claims.php', 'icon' => 'bi-shield-check'],
             ['key' => 'customers', 'label' => 'Customers', 'href' => 'admin/customers.php', 'icon' => 'bi-people'],
             ['key' => 'technicians', 'label' => 'Technicians', 'href' => 'admin/technicians.php', 'icon' => 'bi-tools'],
+            ['key' => 'parts', 'label' => 'Parts Catalog', 'href' => 'admin/parts.php', 'icon' => 'bi-box-seam'],
+            ['key' => 'templates', 'label' => 'Repair Templates', 'href' => 'admin/templates.php', 'icon' => 'bi-journal-bookmark'],
             ['key' => 'reports', 'label' => 'Reports', 'href' => 'admin/reports.php', 'icon' => 'bi-bar-chart'],
             ['key' => 'settings', 'label' => 'Settings', 'href' => 'admin/settings.php', 'icon' => 'bi-gear'],
         ];

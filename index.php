@@ -125,22 +125,36 @@ require_once __DIR__ . '/includes/navbar.php';
                             <div class="lp-phone-face lp-phone-bottom"></div>
                             <div class="lp-phone-face lp-phone-front">
                                 <div class="lp-phone-glass">
-                                    <span class="lp-island"><i></i></span>
+                                    <div class="lp-phone-statusbar">
+                                        <span class="lp-sb-time">9:41</span>
+                                        <span class="lp-island"><i></i></span>
+                                        <span class="lp-sb-icons">
+                                            <i class="lp-sb-sig"></i>
+                                            <b class="lp-sb-net">5G</b>
+                                            <i class="lp-sb-batt"></i>
+                                        </span>
+                                    </div>
                                     <div class="lp-phone-ui">
-                                        <p class="lp-phone-brand">RAPID</p>
-                                        <p class="lp-phone-ticket">RPR-2026-000142</p>
-                                        <p class="lp-phone-device">iPhone 15 Pro · Deep Blue</p>
+                                        <div class="lp-phone-app">
+                                            <p class="lp-phone-brand">RAPID · Live status</p>
+                                            <p class="lp-phone-ticket">RPR-2026-000142</p>
+                                            <p class="lp-phone-device">iPhone 15 Pro · Deep Blue</p>
+                                        </div>
                                         <div class="lp-phone-status">
                                             <span class="lp-pulse"></span>
-                                            Repairing
+                                            Repairing · 62%
                                         </div>
                                         <div class="lp-phone-bar"><span></span></div>
                                         <ul class="lp-phone-steps">
                                             <li class="is-done">Received</li>
                                             <li class="is-done">Diagnosed</li>
                                             <li class="is-now">Repairing</li>
-                                            <li>Pickup</li>
+                                            <li>Ready for pickup</li>
                                         </ul>
+                                        <div class="lp-phone-foot">
+                                            <span class="lp-phone-foot-dot"></span>
+                                            Updated just now
+                                        </div>
                                     </div>
                                 </div>
                             </div>

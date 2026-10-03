@@ -140,8 +140,12 @@ function start_warranty_for_ticket(int $ticketId, ?int $days = null): array
     try {
         $existing = $pdo->prepare('SELECT id FROM warranties WHERE ticket_id = ? LIMIT 1');
         $existing->execute([$ticketId]);
-        if ($existing->fetch()) {
-            return ['ok' => true];
+        $existingId = $existing->fetchColumn();
+        if ($existingId) {
+            if (function_exists('warranty_ensure_verify_code')) {
+                warranty_ensure_verify_code((int) $existingId);
+            }
+            return ['ok' => true, 'warranty_id' => (int) $existingId];
         }
 
         $ticket = $pdo->prepare("SELECT id, ticket_number, current_status FROM repair_tickets WHERE id = ? LIMIT 1");
@@ -164,6 +168,9 @@ function start_warranty_for_ticket(int $ticketId, ?int $days = null): array
         )->execute([$ticketId, $start, $end, $days]);
 
         $warrantyId = (int) $pdo->lastInsertId();
+        if (function_exists('warranty_ensure_verify_code')) {
+            warranty_ensure_verify_code($warrantyId);
+        }
 
         $customerUserId = get_customer_user_id_for_ticket($ticketId);
         if ($customerUserId) {
@@ -412,5 +419,55 @@ function notify_expiring_warranties(int $limit = 20): void
         }
     } catch (Throwable $e) {
         error_log('notify_expiring_warranties: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Claim progress stepper (same markup as the repair stepper).
+ * ponytail: no claim status history table, so only "filed" and the current
+ * stage have dates; add a claim_status_history table if per-stage times matter.
+ *
+ * @param array{claim_status:string, created_at:string, updated_at?:string} $claim
+ */
+function render_claim_stepper(array $claim): void
+{
+    $stages = [
+        'submitted' => ['label' => 'Submitted', 'icon' => 'bi-send'],
+        'reviewing' => ['label' => 'Reviewing', 'icon' => 'bi-search'],
+        'approved' => ['label' => 'Approved', 'icon' => 'bi-hand-thumbs-up'],
+        'repairing' => ['label' => 'Repairing', 'icon' => 'bi-wrench-adjustable'],
+        'resolved' => ['label' => 'Resolved', 'icon' => 'bi-check-circle'],
+    ];
+    $status = (string) $claim['claim_status'];
+    $rejected = $status === 'rejected';
+    $keys = array_keys($stages);
+    // A rejected claim stopped after review.
+    $currentIdx = $rejected ? 1 : (int) array_search($status, $keys, true);
+
+    echo '<ol class="progress-stepper" aria-label="Claim progress">';
+    foreach ($keys as $idx => $key) {
+        $isDone = $idx < $currentIdx || ($rejected && $idx === $currentIdx) || ($status === 'resolved' && $key === 'resolved');
+        $isCurrent = !$rejected && $idx === $currentIdx && $status !== 'resolved';
+        $state = $isCurrent ? 'is-current' : ($isDone ? 'is-done' : 'is-pending');
+        if ($key === 'submitted') {
+            $meta = format_datetime((string) $claim['created_at']);
+        } elseif ($idx === $currentIdx && !empty($claim['updated_at'])) {
+            $meta = ($isCurrent ? 'Since ' : '') . format_datetime((string) $claim['updated_at']);
+        } else {
+            $meta = $isDone ? 'Done' : 'Pending';
+        }
+        echo '<li class="progress-step ' . $state . '"' . ($isCurrent ? ' aria-current="step"' : '') . '>';
+        echo '<span class="progress-step-marker" aria-hidden="true"><i class="bi ' . e($isDone ? 'bi-check-lg' : $stages[$key]['icon']) . '"></i></span>';
+        echo '<div class="progress-step-body">';
+        echo '<div class="progress-step-label">' . e($stages[$key]['label']) . '</div>';
+        echo '<div class="progress-step-meta">' . e($meta) . '</div>';
+        echo '</div></li>';
+    }
+    echo '</ol>';
+
+    if ($rejected) {
+        echo '<p class="progress-exception"><i class="bi bi-x-circle" aria-hidden="true"></i> Claim rejected';
+        echo !empty($claim['updated_at']) ? ' · ' . e(format_datetime((string) $claim['updated_at'])) : '';
+        echo '</p>';
     }
 }

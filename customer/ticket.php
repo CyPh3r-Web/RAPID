@@ -67,28 +67,19 @@ $diagnosis->execute([$ticketId]);
 $diagnosisRow = $diagnosis->fetch() ?: null;
 
 $quotation = db()->prepare(
-    'SELECT labor_cost, parts_cost, other_cost, total_amount, notes, status, valid_until, created_at
+    'SELECT id, labor_cost, parts_cost, other_cost, total_amount, notes, status, valid_until, created_at
      FROM quotations WHERE ticket_id = ? ORDER BY id DESC LIMIT 1'
 );
 $quotation->execute([$ticketId]);
 $quotationRow = $quotation->fetch() ?: null;
-
-$workflowOrder = [
-    'booking_submitted',
-    'received',
-    'diagnosing',
-    'quotation_pending',
-    'awaiting_approval',
-    'approved',
-    'repairing',
-    'ready_for_pickup',
-    'completed',
-];
-
-$reached = [];
-foreach ($historyRows as $row) {
-    $reached[$row['status']] = $row;
+if ($quotationRow) {
+    $quotationRow['items'] = get_quotation_items((int) $quotationRow['id']);
 }
+
+$warrantyLive = get_warranty_for_ticket($ticketId);
+$beforeMedia = array_values(array_filter($mediaRows, static function ($m) {
+    return ($m['media_category'] ?? '') === 'before_repair';
+}));
 
 $pageTitle = $ticket['ticket_number'];
 $showSidebar = true;
@@ -133,65 +124,54 @@ require_once __DIR__ . '/../includes/navbar.php';
             </div>
         <?php endif; ?>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-            <div class="lg:col-span-7">
-                <div class="rapid-card mb-3">
-                    <?php render_ticket_id_block($ticket['ticket_number']); ?>
-                </div>
+        <div class="customer-ticket-layout">
+            <div class="customer-ticket-main">
+                <section class="rapid-card">
+                    <div class="customer-ticket-facts">
+                        <div>
+                            <h2 class="text-sm font-semibold text-rapid mb-3">Ticket details</h2>
+                            <dl class="detail-dl mb-0">
+                                <dt>Problem</dt>
+                                <dd><?= nl2br(e($ticket['problem_description'])) ?></dd>
+                                <dt>Priority</dt>
+                                <dd class="capitalize"><?= e($ticket['priority']) ?></dd>
+                                <dt>Appointment</dt>
+                                <dd><?= e(format_datetime($ticket['appointment_date'])) ?></dd>
+                                <dt>Technician</dt>
+                                <dd><?= e($ticket['technician_name'] ?: 'Not assigned yet') ?></dd>
+                                <dt>Received</dt>
+                                <dd><?= e(format_datetime($ticket['received_at'])) ?></dd>
+                                <dt>Created</dt>
+                                <dd class="mb-0"><?= e(format_datetime($ticket['created_at'])) ?></dd>
+                            </dl>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-semibold text-rapid mb-3">Device</h2>
+                            <dl class="detail-dl mb-0">
+                                <dt>Brand / model</dt>
+                                <dd><?= e($ticket['brand'] . ' ' . $ticket['model']) ?></dd>
+                                <dt>Color</dt>
+                                <dd><?= e($ticket['color'] ?: '—') ?></dd>
+                                <dt>Serial</dt>
+                                <dd><?= e($ticket['serial_number'] ?: '—') ?></dd>
+                                <dt>IMEI</dt>
+                                <dd><?= e($ticket['imei'] ?: '—') ?></dd>
+                                <dt>Accessories</dt>
+                                <dd><?= e($ticket['accessories'] ?: '—') ?></dd>
+                                <dt>Condition</dt>
+                                <dd class="mb-0"><?= e($ticket['physical_condition'] ?: '—') ?></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </section>
 
-                <div class="rapid-card mb-3">
-                    <h2 class="text-sm font-semibold text-rapid mb-3">Ticket details</h2>
-                    <dl class="detail-dl mb-0 grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-x-4">
-                        <dt>Problem</dt>
-                        <dd><?= nl2br(e($ticket['problem_description'])) ?></dd>
-
-                        <dt>Priority</dt>
-                        <dd class="capitalize"><?= e($ticket['priority']) ?></dd>
-
-                        <dt>Appointment</dt>
-                        <dd><?= e(format_datetime($ticket['appointment_date'])) ?></dd>
-
-                        <dt>Technician</dt>
-                        <dd><?= e($ticket['technician_name'] ?: 'Not assigned yet') ?></dd>
-
-                        <dt>Received</dt>
-                        <dd><?= e(format_datetime($ticket['received_at'])) ?></dd>
-
-                        <dt>Created</dt>
-                        <dd class="mb-0"><?= e(format_datetime($ticket['created_at'])) ?></dd>
-                    </dl>
-                </div>
-
-                <div class="rapid-card mb-3">
-                    <h2 class="text-sm font-semibold text-rapid mb-3">Device</h2>
-                    <dl class="detail-dl mb-0 grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-x-4">
-                        <dt>Brand / model</dt>
-                        <dd><?= e($ticket['brand'] . ' ' . $ticket['model']) ?></dd>
-                        <dt>Color</dt>
-                        <dd><?= e($ticket['color'] ?: '—') ?></dd>
-                        <dt>Serial</dt>
-                        <dd><?= e($ticket['serial_number'] ?: '—') ?></dd>
-                        <dt>IMEI</dt>
-                        <dd><?= e($ticket['imei'] ?: '—') ?></dd>
-                        <dt>Accessories</dt>
-                        <dd><?= e($ticket['accessories'] ?: '—') ?></dd>
-                        <dt>Condition</dt>
-                        <dd class="mb-0"><?= e($ticket['physical_condition'] ?: '—') ?></dd>
-                    </dl>
-                </div>
-
-                <div class="rapid-card mb-3">
+                <section class="rapid-card customer-ticket-media">
                     <h2 class="text-sm font-semibold text-rapid mb-3">Before repair media</h2>
-                    <?php
-                    $before = array_filter($mediaRows, function ($m) {
-                        return $m['media_category'] === 'before_repair';
-                    });
-                    ?>
-                    <?php if (!$before): ?>
+                    <?php if (!$beforeMedia): ?>
                         <?php render_empty_state('No before-repair photos', 'You can still track this ticket. Photos were not attached at booking.', null, null, 'bi-camera'); ?>
                     <?php else: ?>
                         <div class="media-grid">
-                            <?php foreach ($before as $m):
+                            <?php foreach ($beforeMedia as $m):
                                 $parsed = media_angle_from_name($m['file_name']);
                             ?>
                                 <div class="media-item">
@@ -212,54 +192,62 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
-                </div>
+                </section>
 
                 <?php if ($diagnosisRow): ?>
-                    <div class="rapid-card mb-3">
+                    <section class="rapid-card">
                         <h2 class="text-sm font-semibold text-rapid mb-3">Diagnosis</h2>
                         <p class="mb-2"><?= nl2br(e($diagnosisRow['diagnosis'])) ?></p>
                         <?php if ($diagnosisRow['recommended_action']): ?>
                             <p class="mb-0 text-sm"><strong>Recommended:</strong> <?= nl2br(e($diagnosisRow['recommended_action'])) ?></p>
                         <?php endif; ?>
-                    </div>
+                    </section>
                 <?php endif; ?>
 
                 <?php if ($quotationRow): ?>
-                    <div class="rapid-card mb-3" id="quotation">
-                        <?php render_quotation_card($quotationRow, $ticket['current_status'] === 'awaiting_approval' && ($quotationRow['status'] ?? '') === 'pending'); ?>
+                    <section class="rapid-card customer-ticket-quote" id="quotation">
+                        <?php
+                        render_quotation_card(
+                            $quotationRow,
+                            $ticket['current_status'] === 'awaiting_approval' && ($quotationRow['status'] ?? '') === 'pending',
+                            url('customer/quotation_print.php?id=' . $ticketId)
+                        );
+                        ?>
                         <?php render_notify_channels('You will be notified in-app, by email, and by SMS when the quote status changes.'); ?>
-                    </div>
+                    </section>
                 <?php endif; ?>
+            </div>
 
-                <?php
-                $warrantyLive = get_warranty_for_ticket($ticketId);
-                ?>
+            <aside class="customer-ticket-side">
+                <section class="rapid-card">
+                    <h2 class="text-sm font-semibold text-rapid mb-3">Progress tracker</h2>
+                    <?php render_public_stepper($ticket['current_status'], $historyRows, $ticket['estimated_completion'] ?? null); ?>
+                    <?php render_notify_channels(); ?>
+                </section>
+
+                <section class="rapid-card">
+                    <?php render_ticket_id_block($ticket['ticket_number']); ?>
+                </section>
+
                 <?php if ($warrantyLive): ?>
-                    <div class="rapid-card mb-3">
+                    <section class="rapid-card customer-ticket-warranty">
                         <h2 class="text-sm font-semibold text-rapid mb-3">Warranty</h2>
                         <?php
                         render_warranty_card(
                             $warrantyLive,
                             $warrantyLive['is_claimable'] ? url('customer/claim_file.php?ticket_id=' . $ticketId) : null,
-                            $ticket['ticket_number']
+                            $ticket['ticket_number'],
+                            url('customer/warranty_print.php?id=' . $ticketId)
                         );
                         ?>
-                    </div>
+                    </section>
                 <?php elseif ($ticket['current_status'] === 'completed'): ?>
-                    <div class="rapid-card mb-3">
+                    <section class="rapid-card">
                         <h2 class="text-sm font-semibold text-rapid mb-2">Warranty</h2>
                         <?php render_loading_state('Warranty record is being prepared…'); ?>
-                    </div>
+                    </section>
                 <?php endif; ?>
-            </div>
-
-            <div class="lg:col-span-5">
-                <div class="rapid-card">
-                    <h2 class="text-sm font-semibold text-rapid mb-3">Progress tracker</h2>
-                    <?php render_public_stepper($ticket['current_status'], $historyRows, $ticket['estimated_completion'] ?? null); ?>
-                    <?php render_notify_channels(); ?>
-                </div>
-            </div>
+            </aside>
         </div>
     </main>
 </div>

@@ -17,7 +17,9 @@ DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `warranty_claims`;
 DROP TABLE IF EXISTS `warranties`;
 DROP TABLE IF EXISTS `repair_status_history`;
+DROP TABLE IF EXISTS `quotation_items`;
 DROP TABLE IF EXISTS `quotations`;
+DROP TABLE IF EXISTS `parts`;
 DROP TABLE IF EXISTS `diagnoses`;
 DROP TABLE IF EXISTS `ai_suggestions`;
 DROP TABLE IF EXISTS `device_media`;
@@ -223,6 +225,46 @@ CREATE TABLE `quotations` (
   KEY `idx_quotations_status` (`status`),
   CONSTRAINT `fk_quotations_ticket` FOREIGN KEY (`ticket_id`) REFERENCES `repair_tickets` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_quotations_technician` FOREIGN KEY (`technician_id`) REFERENCES `technicians` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- parts (catalog for quotation line items)
+-- ------------------------------------------------------------
+CREATE TABLE `parts` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sku` VARCHAR(60) DEFAULT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `category` VARCHAR(100) DEFAULT NULL,
+  `unit_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `notes` TEXT DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_parts_sku` (`sku`),
+  KEY `idx_parts_active` (`is_active`),
+  KEY `idx_parts_name` (`name`),
+  KEY `idx_parts_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- quotation_items (line-item parts for a quotation)
+-- ------------------------------------------------------------
+CREATE TABLE `quotation_items` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quotation_id` INT UNSIGNED NOT NULL,
+  `part_id` INT UNSIGNED DEFAULT NULL,
+  `description` VARCHAR(255) NOT NULL,
+  `quantity` DECIMAL(10,2) NOT NULL DEFAULT 1.00,
+  `unit_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `line_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `sort_order` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_quotation_items_quote` (`quotation_id`),
+  KEY `idx_quotation_items_part` (`part_id`),
+  CONSTRAINT `fk_quotation_items_quote` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_quotation_items_part` FOREIGN KEY (`part_id`) REFERENCES `parts` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------

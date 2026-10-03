@@ -253,14 +253,24 @@
         width: 128,
         margin: 1,
         color: { dark: '#091C39', light: '#FFFFFF' }
-      }, function () { /* ignore */ });
+      }, function (err) {
+        if (err && canvas.parentElement) {
+          canvas.parentElement.classList.add('is-qr-failed');
+        }
+      });
     });
   }
 
   if (document.querySelector('canvas[data-qr]')) {
     var qrScript = document.createElement('script');
-    qrScript.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+    var base = (window.RAPID && window.RAPID.baseUrl) ? window.RAPID.baseUrl : '';
+    qrScript.src = base + '/assets/js/qrcode.min.js';
     qrScript.onload = drawQr;
+    qrScript.onerror = function () {
+      document.querySelectorAll('.ticket-qr-wrap').forEach(function (el) {
+        el.classList.add('is-qr-failed');
+      });
+    };
     document.head.appendChild(qrScript);
   }
 
@@ -598,7 +608,14 @@
       if (nextBtn) nextBtn.hidden = current === panels.length - 1;
     }
 
+    var inline = root.hasAttribute('data-inline');
+
     function open() {
+      if (inline) {
+        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        root.focus({ preventScroll: true });
+        return;
+      }
       root.hidden = false;
       document.body.classList.add('process-modal-open');
       var dialog = root.querySelector('[data-process-dialog]');
@@ -606,6 +623,7 @@
     }
 
     function close() {
+      if (inline) return;
       root.hidden = true;
       document.body.classList.remove('process-modal-open');
     }
@@ -621,6 +639,12 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !root.hidden) close();
     });
+
+    window.RAPID = window.RAPID || {};
+    window.RAPID.openProcessStep = function (stepId) {
+      open();
+      show(indexOfId(stepId || 'quote'));
+    };
 
     if (prevBtn) {
       prevBtn.addEventListener('click', function () {
@@ -649,20 +673,441 @@
     if (root.getAttribute('data-open') === '1') open();
   });
 
-  document.querySelectorAll('[data-quote-form]').forEach(function (form) {
+  window.RAPID = window.RAPID || {};
+  window.RAPID.addQuotePart = function () {
+    return false;
+  };
+  window.RAPID.aiSuggestedParts = [];
+  window.RAPID.setAiSuggestedParts = function (parts) {
+    window.RAPID.aiSuggestedParts = Array.isArray(parts) ? parts : [];
+    var has = window.RAPID.aiSuggestedParts.length > 0;
+    document.querySelectorAll('[data-add-ai-parts]').forEach(function (btn) {
+      btn.hidden = !has;
+    });
+    document.querySelectorAll('[data-ai-parts-hint]').forEach(function (hint) {
+      hint.hidden = !has;
+      if (has) {
+        var n = window.RAPID.aiSuggestedParts.length;
+        hint.textContent =
+          n +
+          ' AI suggested part' +
+          (n === 1 ? '' : 's') +
+          ' ready — click “Use AI suggestions” to add them. You can still edit or remove lines.';
+      }
+    });
+  };
+
+  function initQuoteForm(form) {
     var out = form.querySelector('[data-quote-total]');
-    var fields = form.querySelectorAll('.quote-cost');
+    var partsOut = form.querySelector('[data-parts-subtotal]');
+    var partsList = form.querySelector('[data-quote-parts]');
+    var template = form.querySelector('template[id$="quotePartRowTemplate"]') ||
+      document.getElementById('quotePartRowTemplate');
+    var addAiBtn = form.querySelector('[data-add-ai-parts]');
+
+    function money(n) {
+      return (Math.round((n + Number.EPSILON) * 100) / 100).toFixed(2);
+    }
+
+    function applyCatalogSelection(row, fillFromCatalog) {
+      if (!row) return;
+      var select = row.querySelector('[data-part-catalog]');
+      var nameInput = row.querySelector('[data-part-name]');
+      var priceInput = row.querySelector('.quote-part-price');
+      if (!select || !nameInput) return;
+      var opt = select.options[select.selectedIndex];
+      var hasCatalog = !!(select.value && opt);
+      if (hasCatalog) {
+        nameInput.readOnly = true;
+        if (fillFromCatalog) {
+          nameInput.value = opt.getAttribute('data-name') || '';
+          if (priceInput) priceInput.value = opt.getAttribute('data-price') || '0';
+        }
+      } else {
+        nameInput.readOnly = false;
+      }
+    }
+
+    function syncRemoveButtons() {
+      if (!partsList) return;
+      var rows = partsList.querySelectorAll('[data-quote-part-row]');
+      rows.forEach(function (row) {
+        var btn = row.querySelector('[data-remove-part]');
+        if (btn) btn.hidden = rows.length <= 1;
+      });
+    }
+
     function recalc() {
-      var total = 0;
-      fields.forEach(function (el) {
+      var partsTotal = 0;
+      if (partsList) {
+        partsList.querySelectorAll('[data-quote-part-row]').forEach(function (row) {
+          var qty = parseFloat((row.querySelector('.quote-part-qty') || {}).value || '0') || 0;
+          var price = parseFloat((row.querySelector('.quote-part-price') || {}).value || '0') || 0;
+          var line = qty * price;
+          partsTotal += line;
+          var lineOut = row.querySelector('[data-part-line]');
+          if (lineOut) lineOut.textContent = money(line);
+        });
+      }
+      if (partsOut) partsOut.textContent = money(partsTotal);
+
+      var total = partsTotal;
+      form.querySelectorAll('.quote-cost').forEach(function (el) {
         total += parseFloat(el.value || '0') || 0;
       });
-      if (out) out.textContent = total.toFixed(2);
+      if (out) out.textContent = money(total);
     }
-    fields.forEach(function (el) {
-      el.addEventListener('input', recalc);
+
+    form.addEventListener('change', function (e) {
+      if (e.target.matches('[data-part-catalog]')) {
+        applyCatalogSelection(e.target.closest('[data-quote-part-row]'), true);
+        recalc();
+      }
     });
+
+    form.addEventListener('input', function (e) {
+      if (
+        e.target.matches('.quote-cost') ||
+        e.target.matches('.quote-part-qty') ||
+        e.target.matches('.quote-part-price') ||
+        e.target.matches('[name="part_name[]"]')
+      ) {
+        recalc();
+      }
+    });
+
+    form.addEventListener('click', function (e) {
+      var applyTpl = e.target.closest('[data-apply-template]');
+      if (applyTpl && form.contains(applyTpl)) {
+        var selectTpl = form.querySelector('[data-repair-template-select]');
+        var templates = [];
+        try {
+          templates = JSON.parse(form.getAttribute('data-repair-templates') || '[]') || [];
+        } catch (err) {
+          templates = [];
+        }
+        var tid = selectTpl ? String(selectTpl.value || '') : '';
+        var tpl = null;
+        for (var i = 0; i < templates.length; i++) {
+          if (String(templates[i].id) === tid) {
+            tpl = templates[i];
+            break;
+          }
+        }
+        if (!tpl) {
+          if (window.Swal) {
+            window.Swal.fire({
+              icon: 'info',
+              title: 'Pick a template',
+              text: 'Choose a repair template first.',
+              confirmButtonColor: '#091C39'
+            });
+          }
+          return;
+        }
+
+        var laborInput = form.querySelector('#labor_cost');
+        var otherInput = form.querySelector('#other_cost');
+        var notesInput = form.querySelector('#notes');
+        if (laborInput) laborInput.value = tpl.labor_cost != null ? tpl.labor_cost : 0;
+        if (otherInput) otherInput.value = tpl.other_cost != null ? tpl.other_cost : 0;
+        if (notesInput && tpl.notes) notesInput.value = tpl.notes;
+
+        if (partsList) {
+          partsList.querySelectorAll('[data-quote-part-row]').forEach(function (row) {
+            row.remove();
+          });
+        }
+        var parts = Array.isArray(tpl.parts) ? tpl.parts : [];
+        if (!parts.length) {
+          if (template && partsList) {
+            partsList.appendChild(template.content.cloneNode(true));
+            applyCatalogSelection(partsList.querySelector('[data-quote-part-row]'), false);
+          }
+        } else {
+          parts.forEach(function (sp) {
+            window.RAPID.addQuotePart({
+              partId: sp.part_id || '',
+              name: sp.name || '',
+              quantity: sp.quantity || 1,
+              unitPrice: sp.unit_price != null ? sp.unit_price : 0,
+              openStep: false
+            });
+          });
+        }
+        syncRemoveButtons();
+        recalc();
+        if (window.Swal) {
+          window.Swal.fire({
+            icon: 'success',
+            title: 'Template applied',
+            text: 'Review labor and parts, then send the quotation.',
+            confirmButtonColor: '#091C39'
+          });
+        }
+        return;
+      }
+
+      var addAi = e.target.closest('[data-add-ai-parts]');
+      if (addAi && form.contains(addAi)) {
+        var suggested = window.RAPID.aiSuggestedParts || [];
+        if (!suggested.length) {
+          if (window.Swal) {
+            window.Swal.fire({
+              icon: 'info',
+              title: 'No AI parts yet',
+              text: 'Run Suggest repair steps on the ticket first, then come back here.',
+              confirmButtonColor: '#091C39'
+            });
+          }
+          return;
+        }
+        var count = 0;
+        suggested.forEach(function (sp) {
+          if (
+            window.RAPID.addQuotePart({
+              partId: sp.part_id || '',
+              name: sp.name || '',
+              quantity: sp.quantity || 1,
+              unitPrice: sp.unit_price != null ? sp.unit_price : 0,
+              openStep: false
+            })
+          ) {
+            count += 1;
+          }
+        });
+        if (window.Swal) {
+          window.Swal.fire({
+            icon: count ? 'success' : 'info',
+            title: count ? 'Added ' + count + ' AI part' + (count === 1 ? '' : 's') : 'Could not add parts',
+            text: count
+              ? 'Review qty and prices below. You can edit or remove any line before sending.'
+              : 'The quotation form could not be updated.',
+            confirmButtonColor: '#091C39'
+          });
+        }
+        return;
+      }
+
+      var addBtn = e.target.closest('[data-add-part]');
+      if (addBtn && form.contains(addBtn) && partsList && template) {
+        var node = template.content.cloneNode(true);
+        partsList.appendChild(node);
+        var newRow = partsList.querySelector('[data-quote-part-row]:last-child');
+        applyCatalogSelection(newRow, false);
+        syncRemoveButtons();
+        recalc();
+        var focusEl = newRow && newRow.querySelector('[data-part-catalog]');
+        if (focusEl) focusEl.focus();
+        return;
+      }
+
+      var removeBtn = e.target.closest('[data-remove-part]');
+      if (removeBtn && form.contains(removeBtn)) {
+        var row = removeBtn.closest('[data-quote-part-row]');
+        if (row && partsList && partsList.querySelectorAll('[data-quote-part-row]').length > 1) {
+          row.remove();
+          syncRemoveButtons();
+          recalc();
+        }
+      }
+    });
+
+    if (partsList) {
+      partsList.querySelectorAll('[data-quote-part-row]').forEach(function (row) {
+        applyCatalogSelection(row, false);
+      });
+    }
+    syncRemoveButtons();
     recalc();
+
+    if (addAiBtn) {
+      addAiBtn.hidden = !(window.RAPID.aiSuggestedParts && window.RAPID.aiSuggestedParts.length);
+    }
+
+    window.RAPID.addQuotePart = function (detail) {
+      detail = detail || {};
+      if (!partsList || !template) return false;
+
+      var rows = partsList.querySelectorAll('[data-quote-part-row]');
+      var target = null;
+      if (rows.length === 1) {
+        var only = rows[0];
+        var nameOnly = ((only.querySelector('[data-part-name]') || {}).value || '').trim();
+        var idOnly = ((only.querySelector('[data-part-catalog]') || {}).value || '').trim();
+        if (!nameOnly && !idOnly) {
+          target = only;
+        }
+      }
+      if (!target) {
+        partsList.appendChild(template.content.cloneNode(true));
+        target = partsList.querySelector('[data-quote-part-row]:last-child');
+      }
+      if (!target) return false;
+
+      var select = target.querySelector('[data-part-catalog]');
+      var nameInput = target.querySelector('[data-part-name]');
+      var qtyInput = target.querySelector('.quote-part-qty');
+      var priceInput = target.querySelector('.quote-part-price');
+      var partId = detail.partId != null && detail.partId !== '' ? String(detail.partId) : '';
+      var name = detail.name != null ? String(detail.name) : '';
+      var qty = detail.quantity != null ? String(detail.quantity) : '1';
+      var price = detail.unitPrice != null ? String(detail.unitPrice) : '0';
+
+      if (select) {
+        select.value = partId;
+        if (partId && select.value !== partId) {
+          select.value = '';
+        }
+      }
+      if (nameInput) {
+        nameInput.value = name;
+        nameInput.readOnly = !!(select && select.value);
+      }
+      if (qtyInput) qtyInput.value = qty;
+      if (priceInput) priceInput.value = price;
+
+      applyCatalogSelection(target, false);
+      if (nameInput && name) nameInput.value = name;
+      if (priceInput && detail.unitPrice != null) priceInput.value = price;
+      if (nameInput && select && select.value) nameInput.readOnly = true;
+
+      syncRemoveButtons();
+      recalc();
+
+      if (detail.openStep !== false && typeof window.RAPID.openProcessStep === 'function') {
+        window.RAPID.openProcessStep('quote');
+      }
+
+      return true;
+    };
+  }
+
+  document.querySelectorAll('[data-quote-form]').forEach(initQuoteForm);
+
+  /* ----- Add / edit forms in a modal -----
+     Links marked data-modal-form load the target page's POST form into a
+     modal. Success (server redirect) navigates like a normal submit;
+     validation errors re-render inside the modal. Any failure falls back to
+     the full page, so the form pages still work on their own. */
+  var formModal = null;
+  var formModalOpener = null;
+
+  function closeFormModal() {
+    if (!formModal || formModal.hidden) return;
+    formModal.hidden = true;
+    document.body.classList.remove('process-modal-open');
+    formModal.querySelector('[data-form-modal-body]').innerHTML = '';
+    if (formModalOpener) formModalOpener.focus();
+  }
+
+  function ensureFormModal() {
+    if (formModal) return formModal;
+    formModal = document.createElement('div');
+    formModal.className = 'rapid-modal';
+    formModal.hidden = true;
+    formModal.innerHTML =
+      '<div class="rapid-modal-backdrop" data-form-modal-close></div>' +
+      '<div class="rapid-modal-dialog rapid-form-modal" role="dialog" aria-modal="true" aria-labelledby="formModalTitle" tabindex="-1">' +
+      '<div class="rapid-modal-header"><div>' +
+      '<h2 id="formModalTitle" class="text-xl font-bold text-rapid m-0"></h2>' +
+      '<p class="text-sm text-rapid-muted mt-1 mb-0" data-form-modal-lead></p></div>' +
+      '<button type="button" class="btn btn-outline-secondary btn-sm" data-form-modal-close aria-label="Close">' +
+      '<i class="bi bi-x-lg" aria-hidden="true"></i></button></div>' +
+      '<div class="rapid-modal-body" data-form-modal-body></div></div>';
+    document.body.appendChild(formModal);
+    formModal.addEventListener('click', function (e) {
+      if (e.target.closest('[data-form-modal-close]')) closeFormModal();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeFormModal();
+    });
+    return formModal;
+  }
+
+  function renderFormModal(html, url) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var source = doc.querySelector('.app-main form[method="post"]');
+    if (!source) return false;
+
+    var m = ensureFormModal();
+    var h1 = doc.querySelector('.app-main .page-header h1');
+    var lead = doc.querySelector('.app-main .page-header p');
+    m.querySelector('#formModalTitle').textContent = h1 ? h1.textContent.trim() : '';
+    m.querySelector('[data-form-modal-lead]').textContent = lead ? lead.textContent.trim() : '';
+
+    var body = m.querySelector('[data-form-modal-body]');
+    body.innerHTML = '';
+    doc.querySelectorAll('.app-main > .alert').forEach(function (alert) {
+      body.appendChild(document.importNode(alert, true));
+    });
+
+    var form = document.importNode(source, true);
+    form.classList.remove('rapid-card');
+    form.action = url;
+    // Prefix ids so they never collide with the list page behind the modal.
+    form.querySelectorAll('[id]').forEach(function (el) { el.id = 'fm-' + el.id; });
+    form.querySelectorAll('label[for]').forEach(function (l) { l.htmlFor = 'fm-' + l.htmlFor; });
+    // The page's Cancel link becomes a close button.
+    form.querySelectorAll('a.btn').forEach(function (a) {
+      if (!/cancel/i.test(a.textContent)) return;
+      var cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = a.className;
+      cancel.textContent = a.textContent.trim();
+      cancel.setAttribute('data-form-modal-close', '');
+      a.replaceWith(cancel);
+    });
+    body.appendChild(form);
+
+    if (form.matches('[data-quote-form]')) initQuoteForm(form);
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      submitFormModal(form, url);
+    });
+
+    m.hidden = false;
+    document.body.classList.add('process-modal-open');
+    var first = form.querySelector('input:not([type="hidden"]), select, textarea');
+    (first || m.querySelector('.rapid-modal-dialog')).focus();
+    return true;
+  }
+
+  function submitFormModal(form, url) {
+    var btn = form.querySelector('[type="submit"]');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="rapid-spinner mr-1" role="status" aria-hidden="true"></span> Saving…';
+    }
+    fetch(url, { method: 'POST', body: new FormData(form), credentials: 'same-origin' })
+      .then(function (res) {
+        if (res.redirected) {
+          window.location.href = res.url;
+          return;
+        }
+        return res.text().then(function (html) {
+          if (!renderFormModal(html, url)) window.location.href = res.url;
+        });
+      })
+      .catch(function () {
+        HTMLFormElement.prototype.submit.call(form);
+      });
+  }
+
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('a[data-modal-form]');
+    if (!link || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    formModalOpener = link;
+    fetch(link.href, { credentials: 'same-origin' })
+      .then(function (res) {
+        return res.text().then(function (html) {
+          if (!renderFormModal(html, res.url)) window.location.href = link.href;
+        });
+      })
+      .catch(function () {
+        window.location.href = link.href;
+      });
   });
 
   /* ----- Password visibility ----- */

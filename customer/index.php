@@ -61,6 +61,27 @@ $recent = $pdo->prepare(
 $recent->execute([$customerId]);
 $recentTickets = $recent->fetchAll();
 
+// Newest active repair gets the big progress card.
+$stmt = $pdo->prepare(
+    "SELECT rt.id, rt.ticket_number, rt.current_status, rt.estimated_completion, d.brand, d.model
+     FROM repair_tickets rt
+     INNER JOIN devices d ON d.id = rt.device_id
+     WHERE rt.customer_id = ? AND rt.current_status IN ($in)
+     ORDER BY rt.updated_at DESC, rt.id DESC
+     LIMIT 1"
+);
+$stmt->execute([$customerId]);
+$activeTicket = $stmt->fetch() ?: null;
+$activeHistory = [];
+if ($activeTicket) {
+    $stmt = $pdo->prepare(
+        'SELECT status, remarks, created_at FROM repair_status_history
+         WHERE ticket_id = ? ORDER BY created_at ASC, id ASC'
+    );
+    $stmt->execute([(int) $activeTicket['id']]);
+    $activeHistory = $stmt->fetchAll();
+}
+
 $pageTitle = 'Customer Dashboard';
 $showSidebar = true;
 $navVariant = 'app';
@@ -89,6 +110,27 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <span><i class="bi bi-hourglass-split" aria-hidden="true"></i> You have <?= (int) $pendingQuotes ?> quotation<?= $pendingQuotes === 1 ? '' : 's' ?> awaiting action</span>
                 <a class="btn btn-sm btn-rapid-outline" href="<?= e(url('customer/repairs.php?status=awaiting_approval')) ?>">Review</a>
             </div>
+        <?php endif; ?>
+
+        <?php if ($activeTicket): ?>
+            <?php $activeUrl = url('customer/ticket.php?id=' . (int) $activeTicket['id']); ?>
+            <section class="rapid-card active-repair-card mb-4" aria-labelledby="activeRepairTitle">
+                <div class="flex flex-wrap justify-between items-start gap-3 mb-5">
+                    <div class="flex items-center gap-3">
+                        <span class="active-repair-icon" aria-hidden="true"><i class="bi bi-phone"></i></span>
+                        <div>
+                            <div class="text-xs font-bold uppercase tracking-wider text-rapid-muted">Active repair</div>
+                            <h2 id="activeRepairTitle" class="text-xl mb-0"><?= e($activeTicket['brand'] . ' ' . $activeTicket['model']) ?></h2>
+                            <span class="ticket-mono text-sm"><?= e($activeTicket['ticket_number']) ?></span>
+                        </div>
+                    </div>
+                    <span class="badge-status <?= e(status_badge_class($activeTicket['current_status'])) ?>">
+                        <?= e(status_label($activeTicket['current_status'])) ?>
+                    </span>
+                </div>
+                <?php render_public_stepper($activeTicket['current_status'], $activeHistory, $activeTicket['estimated_completion'] ?? null); ?>
+                <a class="inline-block mt-5 text-sm font-bold" href="<?= e($activeUrl) ?>">Track this repair <span aria-hidden="true">→</span></a>
+            </section>
         <?php endif; ?>
 
         <div class="metric-strip xl:grid-cols-4">

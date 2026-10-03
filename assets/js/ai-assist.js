@@ -109,6 +109,95 @@
       resultEl.appendChild(parts);
     }
 
+    if (payload.suggested_parts && payload.suggested_parts.length) {
+      resultEl.appendChild(el('h3', 'ai-assist-h', 'Suggested parts for quotation'));
+      var hint = el('p', 'ai-assist-hint', 'Optional only — add what you confirm, skip the rest.');
+      resultEl.appendChild(hint);
+
+      payload.suggested_parts.forEach(function (sp) {
+        var card = el('div', 'ai-part-suggest');
+        var top = el('div', 'ai-part-suggest-top');
+        var titleWrap = el('div', 'ai-part-suggest-copy');
+        titleWrap.appendChild(el('strong', '', sp.name || 'Part'));
+        if (sp.matched) {
+          var badge = el('span', 'ai-part-match', 'In catalog');
+          titleWrap.appendChild(badge);
+        }
+        if (sp.reason) {
+          titleWrap.appendChild(el('p', 'ai-assist-why', sp.reason));
+        }
+        var metaBits = [];
+        if (sp.quantity) metaBits.push('Qty ' + sp.quantity);
+        if (sp.sku) metaBits.push(sp.sku);
+        if (sp.unit_price != null && sp.unit_price !== '') {
+          metaBits.push('₱' + Number(sp.unit_price).toFixed(2));
+        }
+        if (metaBits.length) {
+          titleWrap.appendChild(el('p', 'ai-part-meta', metaBits.join(' · ')));
+        }
+        top.appendChild(titleWrap);
+
+        var addBtn = el('button', 'btn btn-rapid-outline btn-sm', 'Add to quotation');
+        addBtn.type = 'button';
+        addBtn.addEventListener('click', function () {
+          var added = false;
+          if (window.RAPID && typeof window.RAPID.addQuotePart === 'function') {
+            added = !!window.RAPID.addQuotePart({
+              partId: sp.part_id || '',
+              name: sp.name || '',
+              quantity: sp.quantity || 1,
+              unitPrice: sp.unit_price != null ? sp.unit_price : 0
+            });
+          }
+          if (window.Swal) {
+            window.Swal.fire({
+              icon: added ? 'success' : 'info',
+              title: added ? 'Added to quotation' : 'Quotation form not open',
+              text: added
+                ? 'Review qty and price in Process repair → Quotation. You can still remove it.'
+                : 'Open Process repair → Quotation first, then try again.',
+              confirmButtonColor: '#091C39'
+            });
+          }
+        });
+        top.appendChild(addBtn);
+        card.appendChild(top);
+        resultEl.appendChild(card);
+      });
+
+      if (payload.suggested_parts.length > 1) {
+        var addAll = el('button', 'btn btn-rapid-outline btn-sm', 'Add all suggested parts');
+        addAll.type = 'button';
+        addAll.className = 'btn btn-rapid-outline btn-sm ai-add-all-parts';
+        addAll.addEventListener('click', function () {
+          var count = 0;
+          payload.suggested_parts.forEach(function (sp) {
+            if (window.RAPID && typeof window.RAPID.addQuotePart === 'function') {
+              if (window.RAPID.addQuotePart({
+                partId: sp.part_id || '',
+                name: sp.name || '',
+                quantity: sp.quantity || 1,
+                unitPrice: sp.unit_price != null ? sp.unit_price : 0
+              })) {
+                count += 1;
+              }
+            }
+          });
+          if (window.Swal) {
+            window.Swal.fire({
+              icon: count ? 'success' : 'info',
+              title: count ? 'Added ' + count + ' part' + (count === 1 ? '' : 's') : 'Quotation form not open',
+              text: count
+                ? 'Open Process repair → Quotation to review before sending.'
+                : 'Open Process repair → Quotation first, then try again.',
+              confirmButtonColor: '#091C39'
+            });
+          }
+        });
+        resultEl.appendChild(addAll);
+      }
+    }
+
     var actions = el('div', 'ai-assist-actions');
     if (payload.draft_diagnosis && document.getElementById('diagnosis')) {
       var useDiag = el('button', 'btn btn-rapid-primary btn-sm', 'Use in diagnosis');
@@ -146,6 +235,10 @@
       if (meta && meta.stale) bits.push('Device details changed — refresh for a new idea');
       if (meta && meta.generated_at) bits.push(meta.generated_at);
       statusEl.textContent = bits.join(' · ');
+    }
+
+    if (window.RAPID && typeof window.RAPID.setAiSuggestedParts === 'function') {
+      window.RAPID.setAiSuggestedParts(payload.suggested_parts || []);
     }
   }
 

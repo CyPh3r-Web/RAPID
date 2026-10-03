@@ -153,20 +153,28 @@ function update_ticket_status(int $ticketId, string $newStatus, int $updatedByUs
         $pdo->commit();
 
         $customerUserId = get_customer_user_id_for_ticket($ticketId);
-        if ($customerUserId) {
+        if ($customerUserId && !in_array($newStatus, ['approved', 'declined'], true)) {
             $msg = 'Ticket ' . $ticket['ticket_number'] . ' is now: ' . status_label($newStatus) . '.';
-            if ($newStatus === 'ready_for_pickup') {
+            $title = 'Repair status updated';
+            $event = 'custom';
+            if ($newStatus === 'awaiting_approval') {
+                $title = 'Quotation ready';
+                $msg = 'A quotation is ready for ticket ' . $ticket['ticket_number'] . '. Please review and approve or decline.';
+                $event = 'quote_ready';
+            } elseif ($newStatus === 'ready_for_pickup') {
                 $msg = 'Ticket ' . $ticket['ticket_number'] . ' is ready for pickup.';
-            }
-            if ($newStatus === 'completed') {
+                $title = 'Ready for pickup';
+                $event = 'ready_for_pickup';
+            } elseif ($newStatus === 'completed') {
                 $msg = 'Ticket ' . $ticket['ticket_number'] . ' is completed. Your warranty period will start now.';
+                $title = 'Repair completed';
+                $event = 'completed';
             }
-            create_notification(
-                $customerUserId,
-                $newStatus === 'ready_for_pickup' ? 'Ready for pickup' : ($newStatus === 'completed' ? 'Repair completed' : 'Repair status updated'),
-                $msg,
-                $ticketId
-            );
+            if (in_array($event, ['quote_ready', 'ready_for_pickup', 'completed'], true)) {
+                notify_customer_alert($customerUserId, $event, $title, $msg, $ticketId);
+            } else {
+                create_notification($customerUserId, $title, $msg, $ticketId);
+            }
         }
 
         if ($newStatus === 'completed') {
@@ -330,8 +338,141 @@ function save_diagnosis(int $ticketId, int $technicianId, int $userId, string $d
 }
 
 /**
+ * Ensure quotation_items table exists (safe for existing installs).
+ */
+function ensure_quotation_items_schema(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    try {
+        db()->exec(
+            "CREATE TABLE IF NOT EXISTS `quotation_items` (
+              `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+              `quotation_id` INT UNSIGNED NOT NULL,
+              `description` VARCHAR(255) NOT NULL,
+              `quantity` DECIMAL(10,2) NOT NULL DEFAULT 1.00,
+              `unit_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+              `line_total` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+              `sort_order` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_quotation_items_quote` (`quotation_id`),
+              CONSTRAINT `fk_quotation_items_quote` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $done = true;
+    } catch (Throwable $e) {
+        error_log('ensure_quotation_items_schema failed: ' . $e->getMessage());
+    }
+}
+
+/**
+ * @return list<array<string, mixed>>
+ */
+function get_quotation_items(int $quotationId): array
+{
+    if ($quotationId <= 0) {
+        return [];
+    }
+
+    ensure_parts_schema();
+
+    try {
+        $stmt = db()->prepare(
+            'SELECT id, part_id, description, quantity, unit_price, line_total, sort_order
+             FROM quotation_items
+             WHERE quotation_id = ?
+             ORDER BY sort_order ASC, id ASC'
+        );
+        $stmt->execute([$quotationId]);
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        error_log('get_quotation_items failed: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Normalize posted part lines into validated rows.
+ *
+ * @param array<int, mixed> $names
+ * @param array<int, mixed> $quantities
+ * @param array<int, mixed> $unitPrices
+ * @param array<int, mixed> $partIds
+ * @return array{ok:bool, error?:string, lines?:list<array{part_id:?int, description:string, quantity:float, unit_price:float, line_total:float}>}
+ */
+function normalize_quotation_part_lines(
+    array $names,
+    array $quantities,
+    array $unitPrices,
+    array $partIds = []
+): array {
+    ensure_parts_schema();
+
+    $lines = [];
+    $count = max(count($names), count($quantities), count($unitPrices), count($partIds));
+
+    for ($i = 0; $i < $count; $i++) {
+        $partId = (int) ($partIds[$i] ?? 0);
+        $desc = trim((string) ($names[$i] ?? ''));
+        $qtyRaw = trim((string) ($quantities[$i] ?? ''));
+        $priceRaw = trim((string) ($unitPrices[$i] ?? ''));
+
+        if ($partId <= 0 && $desc === '') {
+            continue;
+        }
+
+        if ($partId > 0) {
+            $catalog = get_part_by_id($partId);
+            if (!$catalog || !(int) ($catalog['is_active'] ?? 0)) {
+                return ['ok' => false, 'error' => 'One of the selected catalog parts is unavailable.'];
+            }
+            if ($desc === '') {
+                $desc = (string) $catalog['name'];
+            }
+            if ($priceRaw === '') {
+                $priceRaw = (string) $catalog['unit_price'];
+            }
+        } else {
+            $partId = 0;
+        }
+
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'Each part line needs a part name.'];
+        }
+        if ((function_exists('mb_strlen') ? mb_strlen($desc) : strlen($desc)) > 255) {
+            return ['ok' => false, 'error' => 'Part names must be 255 characters or fewer.'];
+        }
+
+        $qty = (float) ($qtyRaw !== '' ? $qtyRaw : 0);
+        $unit = (float) ($priceRaw !== '' ? $priceRaw : 0);
+
+        if ($qty <= 0) {
+            return ['ok' => false, 'error' => 'Part quantity must be greater than zero.'];
+        }
+        if ($unit < 0) {
+            return ['ok' => false, 'error' => 'Part unit price cannot be negative.'];
+        }
+
+        $lines[] = [
+            'part_id' => $partId > 0 ? $partId : null,
+            'description' => $desc,
+            'quantity' => round($qty, 2),
+            'unit_price' => round($unit, 2),
+            'line_total' => round($qty * $unit, 2),
+        ];
+    }
+
+    return ['ok' => true, 'lines' => $lines];
+}
+
+/**
  * Create quotation; totals recalculated server-side; ticket → awaiting_approval.
  *
+ * @param list<array{part_id?:?int, description:string, quantity:float, unit_price:float, line_total?:float}> $partsLines
  * @return array{ok:bool, error?:string, quotation_id?:int}
  */
 function create_quotation(
@@ -339,15 +480,57 @@ function create_quotation(
     int $technicianId,
     int $userId,
     float $labor,
-    float $parts,
+    array $partsLines,
     float $other,
     string $notes,
     ?string $validUntil
 ): array {
-    if ($labor < 0 || $parts < 0 || $other < 0) {
+    if ($labor < 0 || $other < 0) {
         return ['ok' => false, 'error' => 'Costs cannot be negative.'];
     }
 
+    ensure_parts_schema();
+
+    $parts = 0.0;
+    $normalized = [];
+    foreach ($partsLines as $line) {
+        $partId = isset($line['part_id']) ? (int) $line['part_id'] : 0;
+        $desc = trim((string) ($line['description'] ?? ''));
+        $qty = (float) ($line['quantity'] ?? 0);
+        $unit = (float) ($line['unit_price'] ?? 0);
+
+        if ($partId > 0) {
+            $catalog = get_part_by_id($partId);
+            if (!$catalog || !(int) ($catalog['is_active'] ?? 0)) {
+                return ['ok' => false, 'error' => 'One of the selected catalog parts is unavailable.'];
+            }
+            if ($desc === '') {
+                $desc = (string) $catalog['name'];
+            }
+        } else {
+            $partId = 0;
+        }
+
+        if ($desc === '') {
+            return ['ok' => false, 'error' => 'Each part line needs a part name.'];
+        }
+        if ($qty <= 0) {
+            return ['ok' => false, 'error' => 'Part quantity must be greater than zero.'];
+        }
+        if ($unit < 0) {
+            return ['ok' => false, 'error' => 'Part unit price cannot be negative.'];
+        }
+        $lineTotal = round($qty * $unit, 2);
+        $parts += $lineTotal;
+        $normalized[] = [
+            'part_id' => $partId > 0 ? $partId : null,
+            'description' => $desc,
+            'quantity' => round($qty, 2),
+            'unit_price' => round($unit, 2),
+            'line_total' => $lineTotal,
+        ];
+    }
+    $parts = round($parts, 2);
     $total = round($labor + $parts + $other, 2);
 
     $pdo = db();
@@ -388,6 +571,25 @@ function create_quotation(
         ]);
         $quoteId = (int) $pdo->lastInsertId();
 
+        if ($normalized) {
+            $itemStmt = $pdo->prepare(
+                'INSERT INTO quotation_items
+                    (quotation_id, part_id, description, quantity, unit_price, line_total, sort_order)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            );
+            foreach ($normalized as $idx => $line) {
+                $itemStmt->execute([
+                    $quoteId,
+                    $line['part_id'],
+                    $line['description'],
+                    number_format($line['quantity'], 2, '.', ''),
+                    number_format($line['unit_price'], 2, '.', ''),
+                    number_format($line['line_total'], 2, '.', ''),
+                    $idx + 1,
+                ]);
+            }
+        }
+
         $pdo->commit();
 
         // Move status toward awaiting approval
@@ -412,27 +614,16 @@ function create_quotation(
                 return $r;
             }
         } elseif ($status === 'awaiting_approval') {
-            // Already waiting; just notify
             $customerUserId = get_customer_user_id_for_ticket($ticketId);
             if ($customerUserId) {
-                create_notification(
+                notify_customer_alert(
                     $customerUserId,
-                    'Quotation available',
+                    'quote_ready',
+                    'Quotation ready',
                     'A new quotation is ready for ticket ' . $ticket['ticket_number'] . '. Total: ₱' . number_format($total, 2) . '.',
                     $ticketId
                 );
             }
-        }
-
-        $customerUserId = get_customer_user_id_for_ticket($ticketId);
-        if ($customerUserId && $status !== 'awaiting_approval') {
-            // Notification also fired by status update; add quote-specific one
-            create_notification(
-                $customerUserId,
-                'Quotation available',
-                'Please review the quotation for ticket ' . $ticket['ticket_number'] . '. Total: ₱' . number_format($total, 2) . '.',
-                $ticketId
-            );
         }
 
         log_activity($userId, 'quotation_created', 'Quotation #' . $quoteId . ' for ' . $ticket['ticket_number']);
@@ -490,6 +681,16 @@ function respond_to_quotation(int $ticketId, int $customerId, int $userId, strin
         if (!$r['ok']) {
             return $r;
         }
+
+        notify_customer_alert(
+            $userId,
+            $decision === 'approved' ? 'quote_approved' : 'quote_declined',
+            $decision === 'approved' ? 'Quotation approved' : 'Quotation declined',
+            $decision === 'approved'
+                ? 'You approved the quotation for ' . $ticket['ticket_number'] . '. Repair can proceed.'
+                : 'You declined the quotation for ' . $ticket['ticket_number'] . '. Contact the shop if you want a revised quote.',
+            $ticketId
+        );
 
         // Notify assigned technician
         if (!empty($ticket['assigned_technician_id'])) {

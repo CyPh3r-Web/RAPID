@@ -50,19 +50,21 @@ $authTab = 'login';
 
             <?php require __DIR__ . '/../includes/auth_tabs.php'; ?>
 
-            <h1>Welcome back</h1>
-            <p class="auth-lead">Sign in to your RAPID repair portal.</p>
+            <header class="auth-heading">
+                <h1>Welcome back</h1>
+                <p class="auth-lead">Sign in to book repairs, approve quotes, and track live ticket status.</p>
+            </header>
 
             <?php if ($error !== ''): ?>
-                <div class="alert alert-danger py-2 text-sm" role="alert">
+                <div class="auth-alert" role="alert">
                     <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
                     <span><?= e($error) ?></span>
                 </div>
             <?php endif; ?>
 
-            <form method="post" action="" data-disable-on-submit autocomplete="on">
+            <form class="auth-form" method="post" action="" data-disable-on-submit autocomplete="on">
                 <?= csrf_field() ?>
-                <div class="mb-4">
+                <div class="auth-field">
                     <label class="form-label" for="email">Email</label>
                     <div class="auth-input">
                         <i class="bi bi-envelope" aria-hidden="true"></i>
@@ -71,7 +73,7 @@ $authTab = 'login';
                                value="<?= e($_POST['email'] ?? '') ?>" autocomplete="username">
                     </div>
                 </div>
-                <div class="mb-5">
+                <div class="auth-field">
                     <label class="form-label" for="password">Password</label>
                     <div class="auth-input">
                         <i class="bi bi-lock" aria-hidden="true"></i>
@@ -82,7 +84,7 @@ $authTab = 'login';
                         </button>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-rapid-primary btn-lg w-full">Sign in</button>
+                <button type="submit" class="btn btn-rapid-primary btn-lg w-full auth-submit">Sign in</button>
             </form>
 
             <p class="auth-footnote">

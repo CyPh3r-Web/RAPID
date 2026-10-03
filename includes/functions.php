@@ -51,7 +51,14 @@ function url(string $path = ''): string
 
 function asset(string $path): string
 {
-    return url('assets/' . ltrim($path, '/'));
+    $rel = 'assets/' . ltrim($path, '/');
+    $url = url($rel);
+    $file = realpath(__DIR__ . '/../' . $rel);
+    if ($file !== false && is_file($file)) {
+        $sep = strpos($url, '?') !== false ? '&' : '?';
+        $url .= $sep . 'v=' . filemtime($file);
+    }
+    return $url;
 }
 
 function redirect(string $path): void
@@ -268,8 +275,13 @@ function get_customer_ticket(int $ticketId, int $customerId): ?array
 }
 
 require_once __DIR__ . '/upload.php';
+require_once __DIR__ . '/notify.php';
 require_once __DIR__ . '/warranty.php';
 require_once __DIR__ . '/workflow.php';
+require_once __DIR__ . '/parts.php';
+require_once __DIR__ . '/templates.php';
 require_once __DIR__ . '/ai.php';
 require_once __DIR__ . '/ui.php';
 require_once __DIR__ . '/admin_users.php';
+require_once __DIR__ . '/quotation_document.php';
+require_once __DIR__ . '/warranty_document.php';

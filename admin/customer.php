@@ -50,7 +50,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <p><?= e($customer['email']) ?></p>
             </div>
             <div class="flex gap-2">
-                <a class="btn btn-rapid-outline btn-sm" href="<?= e(url('admin/customer_form.php?id=' . $id)) ?>">Edit</a>
+                <a class="btn btn-rapid-outline btn-sm" data-modal-form href="<?= e(url('admin/customer_form.php?id=' . $id)) ?>">Edit</a>
                 <a class="btn btn-outline-secondary btn-sm" href="<?= e(url('admin/customers.php')) ?>">Back</a>
             </div>
         </div>

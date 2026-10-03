@@ -216,7 +216,7 @@ function ai_suggest_technician_repair(int $ticketId, bool $force = false): array
             'ok' => true,
             'cached' => true,
             'stale' => false,
-            'suggestion' => $cached['payload'],
+            'suggestion' => ai_enrich_suggested_parts($cached['payload']),
             'generated_at' => $cached['created_at'],
         ];
     }
@@ -230,7 +230,8 @@ function ai_suggest_technician_repair(int $ticketId, bool $force = false): array
 
     $similar = ai_similar_repairs($ticket, $ticketId);
     $images = ai_ticket_images_for_prompt($mediaRows, 2);
-    $userText = ai_build_technician_user_prompt($ticket, $diagnosisRow, $similar, count($images));
+    $catalog = list_parts_catalog(true);
+    $userText = ai_build_technician_user_prompt($ticket, $diagnosisRow, $similar, count($images), $catalog);
 
     $parts = [['text' => $userText]];
     foreach ($images as $img) {
@@ -249,7 +250,7 @@ function ai_suggest_technician_repair(int $ticketId, bool $force = false): array
                 'ok' => true,
                 'cached' => true,
                 'stale' => $cached['context_hash'] !== $hash,
-                'suggestion' => $cached['payload'],
+                'suggestion' => ai_enrich_suggested_parts($cached['payload']),
                 'generated_at' => $cached['created_at'],
                 'error' => $result['error'],
             ];
@@ -257,7 +258,7 @@ function ai_suggest_technician_repair(int $ticketId, bool $force = false): array
         return $result;
     }
 
-    $normalized = ai_normalize_technician_payload($result['data']);
+    $normalized = ai_enrich_suggested_parts(ai_normalize_technician_payload($result['data']));
     ai_store_suggestion($ticketId, AI_KIND_TECHNICIAN_REPAIR, $hash, $normalized);
 
     return [
@@ -283,6 +284,7 @@ Rules:
 - Put safety first: swollen batteries, liquid, smoke, fire, or cracked glass that could cut.
 - Prefer practical shop tests (visual, continuity, known-good charger, board-level only if justified).
 - Write draft_diagnosis and draft_recommended_action as concise notes the technician can paste into RAPID.
+- suggested_parts are optional quotation hints only — list parts likely needed if the top causes are confirmed. Prefer matching the shop catalog when a close item exists (use that catalog_part_id and exact catalog name). Never invent prices.
 - Return JSON only, matching this shape:
 {
   "summary": "one sentence",
@@ -290,6 +292,7 @@ Rules:
   "likely_causes": [{"cause":"...","likelihood":"high|medium|low","why":"..."}],
   "tests": [{"step":1,"action":"...","looking_for":"..."}],
   "parts_to_check": ["..."],
+  "suggested_parts": [{"name":"...","reason":"...","quantity":1,"catalog_part_id":null}],
   "draft_diagnosis": "...",
   "draft_recommended_action": "..."
 }
@@ -300,9 +303,15 @@ TXT;
  * @param array<string,mixed> $ticket
  * @param array<string,mixed>|null $diagnosisRow
  * @param array<int,array<string,string>> $similar
+ * @param array<int,array<string,mixed>> $catalog
  */
-function ai_build_technician_user_prompt(array $ticket, ?array $diagnosisRow, array $similar, int $photoCount): string
-{
+function ai_build_technician_user_prompt(
+    array $ticket,
+    ?array $diagnosisRow,
+    array $similar,
+    int $photoCount,
+    array $catalog = []
+): string {
     $lines = [
         'Current RAPID ticket (no customer identity):',
         'Device type: ' . ai_clip((string) ($ticket['device_type'] ?? ''), 100),
@@ -333,8 +342,29 @@ function ai_build_technician_user_prompt(array $ticket, ?array $diagnosisRow, ar
         }
     }
 
+    if ($catalog) {
+        $lines[] = '';
+        $lines[] = 'Shop parts catalog (prefer these when suggesting quotation parts; use catalog_part_id when it clearly fits):';
+        $limit = 40;
+        foreach (array_slice($catalog, 0, $limit) as $part) {
+            $bit = '- id=' . (int) $part['id'];
+            if (!empty($part['sku'])) {
+                $bit .= ' sku=' . ai_clip((string) $part['sku'], 40);
+            }
+            $bit .= ' | ' . ai_clip((string) $part['name'], 120);
+            if (!empty($part['category'])) {
+                $bit .= ' | ' . ai_clip((string) $part['category'], 40);
+            }
+            $bit .= ' | list_price=₱' . number_format((float) $part['unit_price'], 2, '.', '');
+            $lines[] = $bit;
+        }
+        if (count($catalog) > $limit) {
+            $lines[] = '... and ' . (count($catalog) - $limit) . ' more catalog items not listed.';
+        }
+    }
+
     $lines[] = '';
-    $lines[] = 'Suggest ordered tests and a repair approach for this specific unit.';
+    $lines[] = 'Suggest ordered tests, optional parts for quotation (if causes are confirmed), and a repair approach for this specific unit.';
 
     return implode("\n", $lines);
 }
@@ -713,6 +743,7 @@ function ai_decode_model_json(string $text): ?array
  *   likely_causes:array<int,array{cause:string,likelihood:string,why:string}>,
  *   tests:array<int,array{step:int,action:string,looking_for:string}>,
  *   parts_to_check:array<int,string>,
+ *   suggested_parts:array<int,array{name:string,reason:string,quantity:float,catalog_part_id:?int}>,
  *   draft_diagnosis:string,
  *   draft_recommended_action:string
  * }
@@ -787,15 +818,196 @@ function ai_normalize_technician_payload(array $raw): array
         }
     }
 
+    $suggested = [];
+    foreach (ai_as_list($raw['suggested_parts'] ?? []) as $item) {
+        if (is_string($item)) {
+            $name = ai_clip($item, 180);
+            if ($name === '') {
+                continue;
+            }
+            $suggested[] = [
+                'name' => $name,
+                'reason' => '',
+                'quantity' => 1.0,
+                'catalog_part_id' => null,
+            ];
+            continue;
+        }
+        if (!is_array($item)) {
+            continue;
+        }
+        $name = ai_clip((string) ($item['name'] ?? $item['part'] ?? $item['description'] ?? ''), 180);
+        if ($name === '') {
+            continue;
+        }
+        $qty = (float) ($item['quantity'] ?? $item['qty'] ?? 1);
+        if ($qty <= 0) {
+            $qty = 1.0;
+        }
+        $catalogId = (int) ($item['catalog_part_id'] ?? $item['part_id'] ?? 0);
+        $suggested[] = [
+            'name' => $name,
+            'reason' => ai_clip((string) ($item['reason'] ?? $item['why'] ?? ''), 300),
+            'quantity' => round($qty, 2),
+            'catalog_part_id' => $catalogId > 0 ? $catalogId : null,
+        ];
+    }
+
+    // Older / sparse responses: promote inspection strings into soft suggestions
+    if (!$suggested && $parts) {
+        foreach (array_slice($parts, 0, 6) as $partName) {
+            $suggested[] = [
+                'name' => $partName,
+                'reason' => 'Listed under parts/areas to check.',
+                'quantity' => 1.0,
+                'catalog_part_id' => null,
+            ];
+        }
+    }
+
     return [
         'summary' => ai_clip((string) ($raw['summary'] ?? ''), 400),
         'safety_notes' => array_slice($safety, 0, 8),
         'likely_causes' => array_slice($causes, 0, 6),
         'tests' => array_slice($tests, 0, 10),
         'parts_to_check' => array_slice($parts, 0, 10),
+        'suggested_parts' => array_slice($suggested, 0, 8),
         'draft_diagnosis' => ai_clip((string) ($raw['draft_diagnosis'] ?? ''), 2000),
         'draft_recommended_action' => ai_clip((string) ($raw['draft_recommended_action'] ?? ''), 1200),
     ];
+}
+
+/**
+ * Match AI part hints to the live shop catalog (never invent prices).
+ *
+ * @param array<string,mixed> $payload
+ * @return array<string,mixed>
+ */
+function ai_enrich_suggested_parts(array $payload): array
+{
+    if (!function_exists('list_parts_catalog')) {
+        return $payload;
+    }
+
+    $rawSuggested = ai_as_list($payload['suggested_parts'] ?? []);
+    if (!$rawSuggested) {
+        $fallback = [];
+        foreach (ai_as_list($payload['parts_to_check'] ?? []) as $partName) {
+            if (is_string($partName) && trim($partName) !== '') {
+                $fallback[] = [
+                    'name' => ai_clip($partName, 180),
+                    'reason' => 'Listed under parts/areas to check.',
+                    'quantity' => 1.0,
+                    'catalog_part_id' => null,
+                ];
+            }
+        }
+        $rawSuggested = $fallback;
+    }
+
+    $catalog = list_parts_catalog(true);
+    $byId = [];
+    foreach ($catalog as $part) {
+        $byId[(int) $part['id']] = $part;
+    }
+
+    $enriched = [];
+    foreach ($rawSuggested as $item) {
+        if (is_string($item)) {
+            $item = [
+                'name' => $item,
+                'reason' => '',
+                'quantity' => 1.0,
+                'catalog_part_id' => null,
+            ];
+        }
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $name = ai_clip((string) ($item['name'] ?? ''), 180);
+        if ($name === '') {
+            continue;
+        }
+        $qty = (float) ($item['quantity'] ?? 1);
+        if ($qty <= 0) {
+            $qty = 1.0;
+        }
+        $reason = ai_clip((string) ($item['reason'] ?? ''), 300);
+        $hintId = (int) ($item['catalog_part_id'] ?? $item['part_id'] ?? 0);
+
+        $matched = null;
+        if ($hintId > 0 && isset($byId[$hintId])) {
+            $matched = $byId[$hintId];
+        } else {
+            $matched = ai_match_catalog_part($name, $catalog);
+        }
+
+        $row = [
+            'name' => $matched ? (string) $matched['name'] : $name,
+            'reason' => $reason,
+            'quantity' => round($qty, 2),
+            'part_id' => $matched ? (int) $matched['id'] : null,
+            'unit_price' => $matched ? round((float) $matched['unit_price'], 2) : null,
+            'sku' => $matched && !empty($matched['sku']) ? (string) $matched['sku'] : null,
+            'matched' => $matched !== null,
+        ];
+        $enriched[] = $row;
+    }
+
+    $payload['suggested_parts'] = array_slice($enriched, 0, 8);
+    return $payload;
+}
+
+/**
+ * @param array<int,array<string,mixed>> $catalog
+ * @return array<string,mixed>|null
+ */
+function ai_match_catalog_part(string $needle, array $catalog): ?array
+{
+    $needleNorm = ai_normalize_part_key($needle);
+    if ($needleNorm === '') {
+        return null;
+    }
+
+    $best = null;
+    $bestScore = 0.0;
+
+    foreach ($catalog as $part) {
+        $nameNorm = ai_normalize_part_key((string) ($part['name'] ?? ''));
+        $skuNorm = ai_normalize_part_key((string) ($part['sku'] ?? ''));
+        if ($nameNorm === '') {
+            continue;
+        }
+
+        if ($needleNorm === $nameNorm || ($skuNorm !== '' && $needleNorm === $skuNorm)) {
+            return $part;
+        }
+
+        $score = 0.0;
+        if ($skuNorm !== '' && (strpos($needleNorm, $skuNorm) !== false || strpos($skuNorm, $needleNorm) !== false)) {
+            $score = 0.92;
+        } elseif (strpos($nameNorm, $needleNorm) !== false || strpos($needleNorm, $nameNorm) !== false) {
+            $score = 0.88;
+        } else {
+            similar_text($needleNorm, $nameNorm, $percent);
+            $score = $percent / 100;
+        }
+
+        if ($score > $bestScore) {
+            $bestScore = $score;
+            $best = $part;
+        }
+    }
+
+    return $bestScore >= 0.72 ? $best : null;
+}
+
+function ai_normalize_part_key(string $value): string
+{
+    $value = strtolower(trim($value));
+    $value = preg_replace('/[^a-z0-9]+/', ' ', $value) ?? $value;
+    return trim(preg_replace('/\s+/', ' ', $value) ?? $value);
 }
 
 /**

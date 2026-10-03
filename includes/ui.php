@@ -348,18 +348,25 @@ function render_ticket_id_block(string $ticketNumber, bool $showQr = true): void
 
 function render_notify_channels(string $context = 'Status changes notify the customer'): void
 {
+    $cfg = function_exists('notify_channel_config') ? notify_channel_config() : ['email' => false, 'sms' => false];
     echo '<div class="notify-channels" title="' . e($context) . '">';
     echo '<span class="notify-chip" title="In-app notification"><i class="bi bi-bell" aria-hidden="true"></i> In-app</span>';
-    echo '<span class="notify-chip" title="Email notification queued"><i class="bi bi-envelope" aria-hidden="true"></i> Email</span>';
-    echo '<span class="notify-chip" title="SMS notification queued"><i class="bi bi-phone" aria-hidden="true"></i> SMS</span>';
+    if (!empty($cfg['email'])) {
+        echo '<span class="notify-chip" title="Email alerts enabled"><i class="bi bi-envelope" aria-hidden="true"></i> Email</span>';
+    }
+    if (!empty($cfg['sms'])) {
+        echo '<span class="notify-chip" title="SMS alerts enabled"><i class="bi bi-phone" aria-hidden="true"></i> SMS</span>';
+    }
     echo '</div>';
 }
 
 /**
  * @param array<string, mixed> $quote
  */
-function render_quotation_card(array $quote, bool $canRespond = false): void
+function render_quotation_card(array $quote, bool $canRespond = false, ?string $printUrl = null): void
 {
+    ensure_quotation_items_schema();
+
     $status = (string) ($quote['status'] ?? 'pending');
     $labor = (float) ($quote['labor_cost'] ?? 0);
     $parts = (float) ($quote['parts_cost'] ?? 0);
@@ -367,16 +374,53 @@ function render_quotation_card(array $quote, bool $canRespond = false): void
     $total = (float) ($quote['total_amount'] ?? ($labor + $parts + $tax));
     $badge = $status === 'approved' ? 'success' : ($status === 'declined' ? 'danger' : 'warning');
 
+    $items = $quote['items'] ?? null;
+    if (!is_array($items) && !empty($quote['id'])) {
+        $items = get_quotation_items((int) $quote['id']);
+    }
+    if (!is_array($items)) {
+        $items = [];
+    }
+
     echo '<div class="quote-card">';
     echo '<div class="quote-card-head">';
     echo '<h2 class="text-sm font-semibold m-0">Repair quotation</h2>';
+    echo '<div class="quote-card-head-actions">';
+    if ($printUrl) {
+        echo '<a class="btn btn-sm btn-rapid-outline" href="' . e($printUrl) . '" target="_blank" rel="noopener">';
+        echo '<i class="bi bi-printer" aria-hidden="true"></i> Print';
+        echo '</a>';
+    }
     echo '<span class="badge-status badge-status-' . $badge . '">';
     echo '<i class="bi ' . e($status === 'approved' ? 'bi-check-circle-fill' : ($status === 'declined' ? 'bi-x-circle' : 'bi-hourglass-split')) . '" aria-hidden="true"></i>';
     echo e(ucfirst($status));
-    echo '</span></div>';
+    echo '</span></div></div>';
+
+    if ($items) {
+        echo '<div class="quote-parts-block">';
+        echo '<p class="quote-parts-heading">Parts</p>';
+        echo '<table class="quote-table quote-parts-table"><thead><tr>';
+        echo '<th>Item</th><th class="text-right">Qty</th><th class="text-right">Unit</th><th class="text-right">Amount</th>';
+        echo '</tr></thead><tbody>';
+        foreach ($items as $item) {
+            $qty = (float) ($item['quantity'] ?? 0);
+            $unit = (float) ($item['unit_price'] ?? 0);
+            $line = (float) ($item['line_total'] ?? ($qty * $unit));
+            echo '<tr>';
+            echo '<td class="quote-part-name">' . e((string) ($item['description'] ?? '')) . '</td>';
+            echo '<td class="text-right tabular-nums">' . e(rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.') ?: '0') . '</td>';
+            echo '<td class="text-right">' . e(money_php($unit)) . '</td>';
+            echo '<td class="text-right">' . e(money_php($line)) . '</td>';
+            echo '</tr>';
+        }
+        echo '<tr class="quote-parts-subtotal"><th colspan="3">Parts subtotal</th><td>' . e(money_php($parts)) . '</td></tr>';
+        echo '</tbody></table></div>';
+    }
 
     echo '<table class="quote-table"><tbody>';
-    echo '<tr><th>Parts</th><td>' . e(money_php($parts)) . '</td></tr>';
+    if (!$items) {
+        echo '<tr><th>Parts</th><td>' . e(money_php($parts)) . '</td></tr>';
+    }
     echo '<tr><th>Labor</th><td>' . e(money_php($labor)) . '</td></tr>';
     echo '<tr><th>Tax &amp; fees</th><td>' . e(money_php($tax)) . '</td></tr>';
     echo '<tr class="quote-total"><th>Total</th><td>' . e(money_php($total)) . '</td></tr>';
@@ -407,7 +451,7 @@ function render_quotation_card(array $quote, bool $canRespond = false): void
 /**
  * @param array<string, mixed> $warranty
  */
-function render_warranty_card(array $warranty, ?string $claimHref = null, ?string $originalTicket = null): void
+function render_warranty_card(array $warranty, ?string $claimHref = null, ?string $originalTicket = null, ?string $certificateUrl = null): void
 {
     $daysTotal = max(1, (int) ($warranty['warranty_days'] ?? 30));
     $remaining = (int) ($warranty['remaining_days'] ?? 0);
@@ -441,11 +485,18 @@ function render_warranty_card(array $warranty, ?string $claimHref = null, ?strin
         render_ticket_number($originalTicket);
         echo '</p>';
     }
+    echo '<div class="flex flex-wrap gap-2 mt-2">';
+    if ($certificateUrl) {
+        echo '<a class="btn btn-rapid-outline btn-sm" href="' . e($certificateUrl) . '" target="_blank" rel="noopener">';
+        echo '<i class="bi bi-award" aria-hidden="true"></i> Certificate / QR';
+        echo '</a>';
+    }
     if ($claimHref && $claimable) {
         echo '<a class="btn btn-rapid-primary btn-sm" href="' . e($claimHref) . '">File a warranty claim</a>';
     } elseif (!$claimable) {
         echo '<p class="text-sm text-rapid-muted mb-0">This warranty window has ended.</p>';
     }
+    echo '</div>';
     echo '</div></div>';
 }
 
