@@ -413,7 +413,7 @@
       rebuildInput();
     }
 
-    function addFiles(fileList) {
+    function addFiles(fileList, presetAngle) {
       Array.prototype.forEach.call(fileList, function (file) {
         if (dt.files.length >= 8) return;
         dt.items.add(file);
@@ -422,10 +422,39 @@
         if (n.indexOf('front') !== -1) guess = 'front';
         else if (n.indexOf('back') !== -1 || n.indexOf('rear') !== -1) guess = 'back';
         else if (n.indexOf('screen') !== -1) guess = 'screen';
-        angles.push(guess);
+        angles.push(presetAngle || guess);
       });
       render();
     }
+
+    // Angle slots (Front / Back / Screen / Other) feed the same file list with the angle preset.
+    var form = zone.closest('form');
+    var slots = form ? form.querySelectorAll('[data-photo-slot]') : [];
+    function syncSlots() {
+      Array.prototype.forEach.call(slots, function (slot) {
+        var angle = slot.getAttribute('data-photo-slot');
+        var count = angles.filter(function (a) { return a === angle; }).length;
+        slot.classList.toggle('is-filled', count > 0);
+        var state = slot.querySelector('[data-slot-state]');
+        if (state) state.textContent = count > 0 ? count + ' added' : 'Add photo';
+      });
+    }
+    Array.prototype.forEach.call(slots, function (slot) {
+      slot.addEventListener('click', function () {
+        var picker = document.createElement('input');
+        picker.type = 'file';
+        picker.accept = input.accept;
+        picker.addEventListener('change', function () {
+          addFiles(picker.files, slot.getAttribute('data-photo-slot'));
+        });
+        picker.click();
+      });
+    });
+    var baseRender = render;
+    render = function () {
+      baseRender();
+      syncSlots();
+    };
 
     zone.addEventListener('click', function (e) {
       if (e.target.closest('select, button')) return;

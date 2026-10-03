@@ -118,11 +118,15 @@ require_once __DIR__ . '/../includes/navbar.php';
             <div class="alert alert-danger"><?= e($error) ?></div>
         <?php endif; ?>
 
-        <div class="flex flex-wrap gap-2 mb-3">
-            <a class="btn btn-sm <?= $tab === 'notify' ? 'btn-rapid-primary' : 'btn-rapid-outline' ?>" href="<?= e(url('admin/settings.php?tab=notify')) ?>">Alerts</a>
-            <a class="btn btn-sm <?= $tab === 'shop' ? 'btn-rapid-primary' : 'btn-rapid-outline' ?>" href="<?= e(url('admin/settings.php?tab=shop')) ?>">Shop</a>
-            <a class="btn btn-sm <?= $tab === 'ai' ? 'btn-rapid-primary' : 'btn-rapid-outline' ?>" href="<?= e(url('admin/settings.php?tab=ai')) ?>">AI</a>
-        </div>
+        <div class="settings-layout">
+        <nav class="rapid-card settings-nav" aria-label="Settings sections">
+            <?php foreach (['shop' => ['Shop profile', 'bi-shop'], 'notify' => ['Email &amp; SMS alerts', 'bi-bell'], 'ai' => ['AI suggestions', 'bi-stars']] as $key => [$label, $icon]): ?>
+                <a class="sidebar-link <?= $tab === $key ? 'active' : '' ?>" href="<?= e(url('admin/settings.php?tab=' . $key)) ?>"<?= $tab === $key ? ' aria-current="page"' : '' ?>>
+                    <i class="bi <?= $icon ?>" aria-hidden="true"></i><span><?= $label ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+        <div class="settings-body">
 
         <?php if ($tab === 'notify'): ?>
             <form method="post" class="rapid-card max-w-[720px]" data-disable-on-submit>
@@ -131,20 +135,22 @@ require_once __DIR__ . '/../includes/navbar.php';
                 <h2 class="text-sm font-semibold text-rapid mb-3">Customer email &amp; SMS</h2>
                 <p class="text-sm text-rapid-muted mb-3">Sent for quotation ready, quotation approved/declined, and ready for pickup (plus in-app).</p>
 
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="notify_email_enabled" name="notify_email_enabled" value="1" <?= get_setting('notify_email_enabled', '0') === '1' ? 'checked' : '' ?>>
-                    <label class="text-sm" for="notify_email_enabled">Enable email alerts (PHP mail)</label>
-                </div>
+                <label class="switch mb-3">
+                    <input type="checkbox" id="notify_email_enabled" name="notify_email_enabled" value="1" <?= get_setting('notify_email_enabled', '0') === '1' ? 'checked' : '' ?>>
+                    <span class="switch-track" aria-hidden="true"></span>
+                    <span>Enable email alerts (PHP mail)</span>
+                </label>
                 <div class="mb-3">
                     <label class="form-label" for="notify_email_from">From email</label>
                     <input type="email" class="form-control" id="notify_email_from" name="notify_email_from"
                            value="<?= e((string) get_setting('notify_email_from', get_setting('shop_email', 'support@rapid.local'))) ?>">
                 </div>
 
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="notify_sms_enabled" name="notify_sms_enabled" value="1" <?= get_setting('notify_sms_enabled', '0') === '1' ? 'checked' : '' ?>>
-                    <label class="text-sm" for="notify_sms_enabled">Enable SMS alerts (Semaphore)</label>
-                </div>
+                <label class="switch mb-3">
+                    <input type="checkbox" id="notify_sms_enabled" name="notify_sms_enabled" value="1" <?= get_setting('notify_sms_enabled', '0') === '1' ? 'checked' : '' ?>>
+                    <span class="switch-track" aria-hidden="true"></span>
+                    <span>Enable SMS alerts (Semaphore)</span>
+                </label>
                 <div class="mb-3">
                     <label class="form-label" for="notify_sms_api_key">Semaphore API key</label>
                     <input type="password" class="form-control" id="notify_sms_api_key" name="notify_sms_api_key" autocomplete="off"
@@ -200,10 +206,11 @@ require_once __DIR__ . '/../includes/navbar.php';
             <form method="post" class="rapid-card max-w-[720px]" data-disable-on-submit>
                 <?= csrf_field() ?>
                 <input type="hidden" name="section" value="ai">
-                <div class="form-check mb-4">
-                    <input class="form-check-input" type="checkbox" id="ai_enabled" name="ai_enabled" value="1" <?= $cfg['enabled'] ? 'checked' : '' ?>>
-                    <label class="text-sm text-navy-800" for="ai_enabled">Enable AI repair suggestions for technicians</label>
-                </div>
+                <label class="switch mb-4">
+                    <input type="checkbox" id="ai_enabled" name="ai_enabled" value="1" <?= $cfg['enabled'] ? 'checked' : '' ?>>
+                    <span class="switch-track" aria-hidden="true"></span>
+                    <span>Enable AI repair suggestions for technicians</span>
+                </label>
                 <div class="mb-3">
                     <label class="form-label" for="ai_gemini_api_key">Gemini API key</label>
                     <input type="password" class="form-control" id="ai_gemini_api_key" name="ai_gemini_api_key"
@@ -222,6 +229,8 @@ require_once __DIR__ . '/../includes/navbar.php';
                 </div>
             </form>
         <?php endif; ?>
+        </div>
+        </div>
     </main>
 </div>
 

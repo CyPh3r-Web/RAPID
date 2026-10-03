@@ -118,6 +118,28 @@ function status_label(string $status): string
     return TICKET_STATUSES[$status] ?? ucwords(str_replace('_', ' ', $status));
 }
 
+/**
+ * Open-ticket conditions that need an admin nudge, in priority order (first match is the reason shown).
+ * SQL uses alias `rt` for repair_tickets. Shared by the admin dashboard list and the tickets filter.
+ *
+ * @return array<string,string> reason => SQL condition
+ */
+function ticket_attention_rules(): array
+{
+    return [
+        'No technician assigned' => 'rt.assigned_technician_id IS NULL',
+        'Past estimated completion' => "rt.estimated_completion IS NOT NULL AND rt.estimated_completion < NOW() AND rt.current_status IN ('diagnosing', 'approved', 'repairing')",
+        'Quote unanswered 2+ days' => "rt.current_status = 'awaiting_approval' AND rt.updated_at < NOW() - INTERVAL 2 DAY",
+        'Not picked up 3+ days' => "rt.current_status = 'ready_for_pickup' AND rt.updated_at < NOW() - INTERVAL 3 DAY",
+    ];
+}
+
+/** SQL for tickets still in progress (alias `rt`). */
+function ticket_open_sql(): string
+{
+    return "rt.current_status NOT IN ('completed', 'cancelled', 'declined')";
+}
+
 function status_badge_class(string $status): string
 {
     switch ($status) {

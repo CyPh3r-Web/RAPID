@@ -14,6 +14,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `activity_logs`;
 DROP TABLE IF EXISTS `notifications`;
+DROP TABLE IF EXISTS `claim_status_history`;
 DROP TABLE IF EXISTS `warranty_claims`;
 DROP TABLE IF EXISTS `warranties`;
 DROP TABLE IF EXISTS `repair_status_history`;
@@ -340,6 +341,22 @@ CREATE TABLE `warranty_claims` (
   CONSTRAINT `fk_claims_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_claims_device` FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_claims_technician` FOREIGN KEY (`technician_id`) REFERENCES `technicians` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ------------------------------------------------------------
+-- claim_status_history (one row per claim status change)
+-- ------------------------------------------------------------
+CREATE TABLE `claim_status_history` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `claim_id` INT UNSIGNED NOT NULL,
+  `status` ENUM('submitted', 'reviewing', 'approved', 'rejected', 'repairing', 'resolved') NOT NULL,
+  `changed_by` INT UNSIGNED DEFAULT NULL,
+  `remarks` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_claim_history_claim` (`claim_id`),
+  CONSTRAINT `fk_claim_history_claim` FOREIGN KEY (`claim_id`) REFERENCES `warranty_claims` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_claim_history_user` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------

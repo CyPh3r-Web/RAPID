@@ -85,6 +85,11 @@ require_once __DIR__ . '/../includes/navbar.php';
             <div class="alert alert-danger mb-3"><?= e($error) ?></div>
         <?php endif; ?>
 
+        <div class="rapid-card mb-3">
+            <h2 class="text-sm font-semibold text-rapid mb-4">Claim progress</h2>
+            <?php render_claim_stepper($claim); ?>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
             <div class="lg:col-span-7">
                 <div class="rapid-card mb-3">

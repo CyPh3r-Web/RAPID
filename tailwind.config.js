@@ -56,7 +56,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['"Manrope"', 'system-ui', 'sans-serif'],
-        display: ['"Exo 2"', 'system-ui', 'sans-serif'],
+        display: ['"Sora"', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       borderRadius: {

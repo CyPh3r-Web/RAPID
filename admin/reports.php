@@ -191,6 +191,14 @@ require_once __DIR__ . '/../includes/navbar.php';
 <div class="app-shell">
     <?php require_once __DIR__ . '/../includes/sidebar.php'; ?>
     <main class="app-main">
+        <header class="reports-print-head" aria-hidden="true">
+            <div>
+                <strong><?= e((string) get_setting('shop_name', SHOP_NAME)) ?></strong>
+                <span>Operations report · last 12 months</span>
+            </div>
+            <span>Generated <?= e(date('M j, Y g:i A')) ?></span>
+        </header>
+
         <div class="page-header reports-header">
             <div>
                 <h1>Operations reports</h1>
@@ -235,7 +243,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                 </div>
             </div>
             <div class="reports-kpi">
-                <div class="reports-kpi-icon is-violet"><i class="bi bi-currency-dollar" aria-hidden="true"></i></div>
+                <div class="reports-kpi-icon is-violet"><span class="reports-kpi-peso" aria-hidden="true">₱</span></div>
                 <div>
                     <div class="label">Approved quotes</div>
                     <div class="value value-sm"><?= e(money_php($approvedRevenue)) ?></div>

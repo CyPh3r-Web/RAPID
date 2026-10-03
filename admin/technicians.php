@@ -96,12 +96,27 @@ require_once __DIR__ . '/../includes/navbar.php';
                             <?php foreach ($technicians as $t): ?>
                                 <tr>
                                     <td>
-                                        <div class="font-semibold"><?= e($t['first_name'] . ' ' . $t['last_name']) ?></div>
-                                        <div class="text-sm text-rapid-muted"><?= e($t['email']) ?></div>
+                                        <div class="person-cell">
+                                            <span class="person-avatar" aria-hidden="true"><?= e(strtoupper(substr((string) $t['first_name'], 0, 1) . substr((string) $t['last_name'], 0, 1))) ?></span>
+                                            <span>
+                                                <span class="block font-semibold"><?= e($t['first_name'] . ' ' . $t['last_name']) ?></span>
+                                                <span class="block text-sm text-rapid-muted"><?= e($t['email']) ?></span>
+                                            </span>
+                                        </div>
                                     </td>
                                     <td><?= e($t['specialization'] ?: '—') ?></td>
-                                    <td class="capitalize"><?= e($t['availability_status']) ?></td>
-                                    <td><?= (int) $t['open_jobs'] ?></td>
+                                    <?php
+                                    $avail = (string) $t['availability_status'];
+                                    $availClass = ['available' => 'badge-status-success', 'busy' => 'badge-status-warning'][$avail] ?? 'badge-status-muted';
+                                    $jobs = (int) $t['open_jobs'];
+                                    ?>
+                                    <td><span class="badge-status <?= e($availClass) ?>"><?= e(ucfirst($avail)) ?></span></td>
+                                    <td>
+                                        <div class="flex items-center gap-2 min-w-[8rem]">
+                                            <div class="load-bar flex-1" role="img" aria-label="<?= $jobs ?> open jobs"><span style="width: <?= min(100, $jobs * 10) ?>%"></span></div>
+                                            <strong class="tabular-nums"><?= $jobs ?></strong>
+                                        </div>
+                                    </td>
                                     <td>
                                         <span class="badge-status <?= $t['status'] === 'active' ? 'badge-status-success' : 'badge-status-muted' ?>">
                                             <?= e(ucfirst($t['status'])) ?>

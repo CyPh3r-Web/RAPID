@@ -241,6 +241,7 @@ function file_warranty_claim(int $ticketId, int $customerId, int $userId, string
             $ticket['assigned_technician_id'] ?: null,
         ]);
         $claimId = (int) $pdo->lastInsertId();
+        record_claim_status($claimId, 'submitted', $userId);
 
         create_notification(
             $userId,
@@ -362,6 +363,9 @@ function update_warranty_claim(
 
         $params[] = $claimId;
         $pdo->prepare('UPDATE warranty_claims SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
+        if ($newStatus !== $from) {
+            record_claim_status($claimId, $newStatus, $actorUserId, $resolution !== '' ? $resolution : null);
+        }
 
         create_notification(
             (int) $claim['customer_user_id'],
@@ -423,14 +427,74 @@ function notify_expiring_warranties(int $limit = 20): void
 }
 
 /**
+ * Claim status history table, created on first use (like repair_templates).
+ */
+function ensure_claim_history_schema(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    try {
+        db()->exec(
+            "CREATE TABLE IF NOT EXISTS `claim_status_history` (
+              `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+              `claim_id` INT UNSIGNED NOT NULL,
+              `status` ENUM('submitted', 'reviewing', 'approved', 'rejected', 'repairing', 'resolved') NOT NULL,
+              `changed_by` INT UNSIGNED DEFAULT NULL,
+              `remarks` TEXT DEFAULT NULL,
+              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_claim_history_claim` (`claim_id`),
+              CONSTRAINT `fk_claim_history_claim` FOREIGN KEY (`claim_id`) REFERENCES `warranty_claims` (`id`) ON DELETE CASCADE,
+              CONSTRAINT `fk_claim_history_user` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $done = true;
+    } catch (Throwable $e) {
+        error_log('ensure_claim_history_schema: ' . $e->getMessage());
+    }
+}
+
+function record_claim_status(int $claimId, string $status, ?int $userId = null, ?string $remarks = null): void
+{
+    ensure_claim_history_schema();
+    try {
+        db()->prepare('INSERT INTO claim_status_history (claim_id, status, changed_by, remarks) VALUES (?, ?, ?, ?)')
+            ->execute([$claimId, $status, $userId ?: null, $remarks]);
+    } catch (Throwable $e) {
+        // History is informational; never block the claim update itself.
+        error_log('record_claim_status: ' . $e->getMessage());
+    }
+}
+
+/**
+ * @return array<string,string> status => earliest time it was reached
+ */
+function get_claim_status_times(int $claimId): array
+{
+    ensure_claim_history_schema();
+    try {
+        $stmt = db()->prepare(
+            'SELECT status, MIN(created_at) FROM claim_status_history WHERE claim_id = ? GROUP BY status'
+        );
+        $stmt->execute([$claimId]);
+        return $stmt->fetchAll(PDO::FETCH_KEY_PAIR) ?: [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
  * Claim progress stepper (same markup as the repair stepper).
- * ponytail: no claim status history table, so only "filed" and the current
- * stage have dates; add a claim_status_history table if per-stage times matter.
+ * Stage dates come from claim_status_history; claims filed before that table
+ * existed fall back to filed date + last update.
  *
- * @param array{claim_status:string, created_at:string, updated_at?:string} $claim
+ * @param array{id?:int, claim_status:string, created_at:string, updated_at?:string} $claim
  */
 function render_claim_stepper(array $claim): void
 {
+    $times = !empty($claim['id']) ? get_claim_status_times((int) $claim['id']) : [];
     $stages = [
         'submitted' => ['label' => 'Submitted', 'icon' => 'bi-send'],
         'reviewing' => ['label' => 'Reviewing', 'icon' => 'bi-search'],
@@ -449,7 +513,9 @@ function render_claim_stepper(array $claim): void
         $isDone = $idx < $currentIdx || ($rejected && $idx === $currentIdx) || ($status === 'resolved' && $key === 'resolved');
         $isCurrent = !$rejected && $idx === $currentIdx && $status !== 'resolved';
         $state = $isCurrent ? 'is-current' : ($isDone ? 'is-done' : 'is-pending');
-        if ($key === 'submitted') {
+        if (!empty($times[$key])) {
+            $meta = ($isCurrent ? 'Since ' : '') . format_datetime((string) $times[$key]);
+        } elseif ($key === 'submitted') {
             $meta = format_datetime((string) $claim['created_at']);
         } elseif ($idx === $currentIdx && !empty($claim['updated_at'])) {
             $meta = ($isCurrent ? 'Since ' : '') . format_datetime((string) $claim['updated_at']);

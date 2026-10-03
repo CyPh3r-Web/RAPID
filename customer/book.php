@@ -304,9 +304,18 @@ require_once __DIR__ . '/../includes/navbar.php';
                     </div>
                 </div>
                 <p class="text-rapid-muted text-sm mb-2">
-                    Upload the before-repair record. Tag each file as front, back, or screen.
+                    Photograph the device before repair — tap an angle below, or drop files in the box.
                     JPG, PNG, WEBP, MP4, MOV · max 10 MB each · up to 8 files.
                 </p>
+                <div class="photo-slots" role="group" aria-label="Add a photo by angle">
+                    <?php foreach (['front' => 'Front', 'back' => 'Back', 'screen' => 'Screen', 'other' => 'Other'] as $angle => $label): ?>
+                        <button type="button" class="photo-slot" data-photo-slot="<?= e($angle) ?>">
+                            <i class="bi bi-camera" aria-hidden="true"></i>
+                            <strong><?= e($label) ?></strong>
+                            <span data-slot-state>Add photo</span>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
                 <div class="dropzone" data-dropzone>
                     <input type="file" class="sr-only" id="media" name="media[]" multiple
                            accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,image/jpeg,image/png,image/webp,video/mp4,video/quicktime">

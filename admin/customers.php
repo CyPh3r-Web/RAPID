@@ -107,7 +107,12 @@ require_once __DIR__ . '/../includes/navbar.php';
                         <tbody>
                             <?php foreach ($customers as $c): ?>
                                 <tr>
-                                    <td class="font-semibold"><?= e($c['first_name'] . ' ' . $c['last_name']) ?></td>
+                                    <td>
+                                        <a class="person-cell" href="<?= e(url('admin/customer.php?id=' . (int) $c['id'])) ?>">
+                                            <span class="person-avatar" aria-hidden="true"><?= e(strtoupper(substr((string) $c['first_name'], 0, 1) . substr((string) $c['last_name'], 0, 1))) ?></span>
+                                            <?= e($c['first_name'] . ' ' . $c['last_name']) ?>
+                                        </a>
+                                    </td>
                                     <td><?= e($c['email']) ?></td>
                                     <td><?= e($c['phone'] ?: '—') ?></td>
                                     <td><?= (int) $c['ticket_count'] ?></td>

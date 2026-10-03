@@ -59,6 +59,25 @@ $recent = $pdo->prepare(
      LIMIT 5"
 );
 $recent->execute([$customerId]);
+
+// Running warranties, soonest to expire first (same source as the claims page).
+$stmt = $pdo->prepare(
+    'SELECT w.ticket_id, d.brand, d.model
+     FROM warranties w
+     INNER JOIN repair_tickets rt ON rt.id = w.ticket_id
+     INNER JOIN devices d ON d.id = rt.device_id
+     WHERE rt.customer_id = ? AND w.warranty_end >= CURDATE()
+     ORDER BY w.warranty_end ASC
+     LIMIT 4'
+);
+$stmt->execute([$customerId]);
+$activeWarranties = [];
+foreach ($stmt->fetchAll() as $row) {
+    $w = get_warranty_for_ticket((int) $row['ticket_id']);
+    if ($w) {
+        $activeWarranties[] = $row + ['w' => $w];
+    }
+}
 $recentTickets = $recent->fetchAll();
 
 // Newest active repair gets the big progress card.
@@ -152,9 +171,10 @@ require_once __DIR__ . '/../includes/navbar.php';
             </div>
         </div>
 
-        <div class="rapid-card p-0 overflow-hidden">
-            <div class="flex justify-between items-center px-3 py-3 border-b border-rapid-border">
-                <h2 class="text-sm font-semibold text-rapid mb-0">Recent tickets</h2>
+        <div class="dash-split">
+        <div class="rapid-card p-0 overflow-hidden dash-split-main">
+            <div class="flex justify-between items-center px-4 py-3 border-b border-rapid-border">
+                <h2 class="text-lg mb-0">Recent repairs</h2>
                 <a class="text-sm" href="<?= e(url('customer/repairs.php')) ?>">View all</a>
             </div>
             <?php if (!$recentTickets): ?>
@@ -165,37 +185,49 @@ require_once __DIR__ . '/../includes/navbar.php';
                     <a class="btn btn-rapid-primary btn-sm" href="<?= e(url('customer/book.php')) ?>">Book a repair</a>
                 </div>
             <?php else: ?>
-                <div class="overflow-x-auto">
-                    <table class="rapid-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>Ticket</th>
-                                <th>Device</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($recentTickets as $t): ?>
-                                <tr>
-                                    <td><?php render_ticket_number($t['ticket_number'], url('customer/ticket.php?id=' . (int) $t['id'])); ?></td>
-                                    <td><?= e($t['brand'] . ' ' . $t['model']) ?></td>
-                                    <td>
-                                        <span class="badge-status <?= e(status_badge_class($t['current_status'])) ?>">
-                                            <?= e(status_label($t['current_status'])) ?>
-                                        </span>
-                                    </td>
-                                    <td class="text-sm whitespace-nowrap"><?= e(format_datetime($t['created_at'], 'M j, Y')) ?></td>
-                                    <td class="text-right">
-                                        <a class="btn btn-sm btn-rapid-outline" href="<?= e(url('customer/ticket.php?id=' . (int) $t['id'])) ?>">View</a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                <ul class="repair-list">
+                    <?php foreach ($recentTickets as $t): ?>
+                        <li>
+                            <a class="repair-row" href="<?= e(url('customer/ticket.php?id=' . (int) $t['id'])) ?>">
+                                <span class="repair-row-main">
+                                    <strong><?= e($t['brand'] . ' ' . $t['model']) ?></strong>
+                                    <span class="text-sm text-rapid-muted"><span class="ticket-mono"><?= e($t['ticket_number']) ?></span> · <?= e(format_datetime($t['created_at'], 'M j, Y')) ?></span>
+                                </span>
+                                <span class="badge-status <?= e(status_badge_class($t['current_status'])) ?>"><?= e(status_label($t['current_status'])) ?></span>
+                                <i class="bi bi-chevron-right repair-row-chev" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
             <?php endif; ?>
+        </div>
+
+        <section class="rapid-card dash-split-side" aria-labelledby="warrantiesTitle">
+            <div class="flex justify-between items-center gap-2 mb-4">
+                <h2 id="warrantiesTitle" class="text-lg mb-0">Warranties</h2>
+                <a class="text-sm font-bold" href="<?= e(url('customer/claims.php')) ?>">Claims</a>
+            </div>
+            <?php if (!$activeWarranties): ?>
+                <p class="text-sm text-rapid-muted mb-0">No active warranties. Completed repairs start one automatically.</p>
+            <?php else: ?>
+                <ul class="load-list">
+                    <?php foreach ($activeWarranties as $aw): ?>
+                        <?php
+                        $w = $aw['w'];
+                        $left = max(0, (int) $w['remaining_days']);
+                        $expiring = $w['computed_status'] === 'expiring_soon';
+                        ?>
+                        <li>
+                            <div class="load-list-row">
+                                <span class="font-bold"><?= e($aw['brand'] . ' ' . $aw['model']) ?></span>
+                                <span class="<?= $expiring ? 'text-amber-800 font-bold' : 'text-rapid-muted' ?>"><?= $left ?> day<?= $left === 1 ? '' : 's' ?> left</span>
+                            </div>
+                            <div class="warranty-tile-bar" role="img" aria-label="<?= $left ?> of <?= (int) $w['warranty_days'] ?> warranty days left"><span class="<?= $expiring ? 'is-expiring' : '' ?>" style="width: <?= (int) round($left / max(1, (int) $w['warranty_days']) * 100) ?>%"></span></div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </section>
         </div>
     </main>
 </div>

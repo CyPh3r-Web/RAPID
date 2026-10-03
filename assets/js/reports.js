@@ -7,22 +7,45 @@
   var d = window.__RAPID_CHARTS__;
   if (!d) return;
 
-  var NAVY = '#091C39';
-  var BLUE = '#0072FC';
-  var BLUE_SOFT = '#3D94FD';
+  var NAVY = '#0A0C10';
+  var BLUE = '#1F5BFF';
+  var BLUE_SOFT = '#6E9BFF';
   var NAVY_MID = '#1A3A6B';
-  var MUTED = '#5B6B82';
-  var PALETTE = [NAVY, BLUE, BLUE_SOFT, NAVY_MID, '#6366F1', '#0EA5E9', '#F59E0B', MUTED];
+  var MUTED = '#5A6170';
+  // Ten distinct hues so every ticket status gets its own colour (no repeats in the status donut).
+  var PALETTE = [BLUE, NAVY, '#0891B2', '#E3A008', '#7C3AED', '#059669', BLUE_SOFT, '#DC2626', '#94A3B8', '#B45309'];
   var FONT = 'Manrope, system-ui, sans-serif';
   var apexInstances = [];
   var echartInstances = [];
 
+  /* ----- Print: switch to an A4-width layout, redraw charts at that width, then print ----- */
+  function redrawAll() {
+    var pending = apexInstances.map(function (c) {
+      // redrawPaths=true re-measures the parent, so charts fit the current layout width
+      return c.updateOptions({ chart: { animations: { enabled: false } } }, true, false);
+    });
+    echartInstances.forEach(function (c) { c.resize(); });
+    return Promise.all(pending);
+  }
+
+  function setPrintLayout(on) {
+    if (document.body.classList.contains('reports-print') === on) return Promise.resolve();
+    document.body.classList.toggle('reports-print', on);
+    void document.body.offsetWidth; // apply the layout before measuring
+    return redrawAll();
+  }
+
   var printBtn = document.getElementById('reportsPrint');
   if (printBtn) {
     printBtn.addEventListener('click', function () {
-      window.print();
+      setPrintLayout(true).then(function () {
+        window.requestAnimationFrame(function () { window.print(); });
+      });
     });
   }
+  // Ctrl+P / browser menu: best effort, the layout switch and redraw run synchronously enough for print preview.
+  window.addEventListener('beforeprint', function () { setPrintLayout(true); });
+  window.addEventListener('afterprint', function () { setPrintLayout(false); });
 
   function hasSeries(pack) {
     return pack && Array.isArray(pack.labels) && pack.labels.length > 0
@@ -76,7 +99,7 @@
     var chart = new ApexCharts(el, Object.assign({}, apexBase, {
       chart: Object.assign({}, apexBase.chart, { type: 'area', height: 340, stacked: false }),
       colors: [NAVY, BLUE],
-      stroke: { curve: 'smooth', width: 3 },
+      stroke: { curve: 'monotoneCubic', width: 3 }, // smooth without dipping below real values
       fill: {
         type: 'gradient',
         gradient: { shadeIntensity: 0.5, opacityFrom: 0.35, opacityTo: 0.04, stops: [0, 90, 100] }
@@ -161,8 +184,9 @@
     var chart = new ApexCharts(el, Object.assign({}, apexBase, {
       chart: Object.assign({}, apexBase.chart, { type: 'bar', height: 300 }),
       plotOptions: {
-        bar: { horizontal: true, borderRadius: 6, barHeight: '62%', distributed: true }
+        bar: { horizontal: true, borderRadius: 6, barHeight: '62%' }
       },
+      colors: [BLUE], // one series, one colour
       series: [{ name: 'Tickets', data: d.brands.data }],
       xaxis: {
         categories: d.brands.labels,
@@ -254,7 +278,7 @@
     }
     var chart = echarts.init(el);
     chart.setOption({
-      color: [NAVY, NAVY_MID, BLUE, BLUE_SOFT, '#93C5FD'],
+      color: [NAVY, NAVY_MID, BLUE, BLUE_SOFT, '#A9C1FF'],
       tooltip: { trigger: 'item', formatter: '{b}: {c}' },
       series: [{
         type: 'funnel',
@@ -312,10 +336,7 @@
         data: d.technicians.data.slice().reverse(),
         itemStyle: {
           borderRadius: [0, 8, 8, 0],
-          color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-            { offset: 0, color: NAVY },
-            { offset: 1, color: BLUE }
-          ])
+          color: BLUE
         }
       }]
     });

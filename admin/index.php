@@ -40,27 +40,46 @@ foreach ($pipeline as &$stage) {
 }
 unset($stage);
 
-// Open tickets that need an admin nudge; first matching reason wins.
+// Open tickets that need an admin nudge; first matching reason wins (rules shared with the tickets filter).
+$reasonCase = 'CASE';
+foreach (ticket_attention_rules() as $reason => $cond) {
+    $reasonCase .= ' WHEN ' . $cond . ' THEN ' . $pdo->quote($reason);
+}
+$reasonCase .= ' END';
+$attentionWhere = ticket_open_sql() . ' AND (' . implode(' OR ', array_map(static fn ($c) => "($c)", ticket_attention_rules())) . ')';
+$attentionTotal = (int) $pdo->query("SELECT COUNT(*) FROM repair_tickets rt WHERE $attentionWhere")->fetchColumn();
 $attention = $pdo->query(
-    "SELECT * FROM (
-        SELECT rt.id, rt.ticket_number, rt.current_status, rt.updated_at, rt.problem_description,
-               d.brand, d.model, CONCAT(cu.first_name, ' ', cu.last_name) AS customer_name,
-               CASE
-                   WHEN rt.assigned_technician_id IS NULL THEN 'No technician assigned'
-                   WHEN rt.estimated_completion IS NOT NULL AND rt.estimated_completion < NOW()
-                        AND rt.current_status IN ('diagnosing', 'approved', 'repairing') THEN 'Past estimated completion'
-                   WHEN rt.current_status = 'awaiting_approval' AND rt.updated_at < NOW() - INTERVAL 2 DAY THEN 'Quote unanswered 2+ days'
-                   WHEN rt.current_status = 'ready_for_pickup' AND rt.updated_at < NOW() - INTERVAL 3 DAY THEN 'Not picked up 3+ days'
-               END AS reason
-        FROM repair_tickets rt
-        INNER JOIN devices d ON d.id = rt.device_id
-        INNER JOIN customers c ON c.id = rt.customer_id
-        INNER JOIN users cu ON cu.id = c.user_id
-        WHERE rt.current_status NOT IN ('completed', 'cancelled', 'declined')
-     ) t
-     WHERE reason IS NOT NULL
-     ORDER BY updated_at ASC
+    "SELECT rt.id, rt.ticket_number, rt.current_status, rt.updated_at, rt.problem_description,
+            d.brand, d.model, CONCAT(cu.first_name, ' ', cu.last_name) AS customer_name,
+            $reasonCase AS reason
+     FROM repair_tickets rt
+     INNER JOIN devices d ON d.id = rt.device_id
+     INNER JOIN customers c ON c.id = rt.customer_id
+     INNER JOIN users cu ON cu.id = c.user_id
+     WHERE $attentionWhere
+     ORDER BY rt.updated_at ASC
      LIMIT 8"
+)->fetchAll();
+
+$techLoad = $pdo->query(
+    "SELECT t.id, CONCAT(u.first_name, ' ', u.last_name) AS name, t.availability_status,
+            COUNT(rt.id) AS open_jobs
+     FROM technicians t
+     INNER JOIN users u ON u.id = t.user_id
+     LEFT JOIN repair_tickets rt ON rt.assigned_technician_id = t.id
+          AND rt.current_status NOT IN ('completed', 'cancelled', 'declined')
+     GROUP BY t.id, u.first_name, u.last_name, t.availability_status
+     ORDER BY open_jobs DESC, name ASC"
+)->fetchAll();
+$maxLoad = max(1, ...array_map(static fn ($t) => (int) $t['open_jobs'], $techLoad ?: [['open_jobs' => 0]]));
+
+$openClaimRows = $pdo->query(
+    "SELECT wc.id, wc.claim_status, wc.issue_description, d.brand, d.model
+     FROM warranty_claims wc
+     INNER JOIN devices d ON d.id = wc.device_id
+     WHERE wc.claim_status NOT IN ('rejected', 'resolved')
+     ORDER BY wc.created_at DESC
+     LIMIT 4"
 )->fetchAll();
 
 $board = $pdo->query(
@@ -135,10 +154,13 @@ require_once __DIR__ . '/../includes/navbar.php';
             </div>
         </section>
 
-        <section class="rapid-card p-0 overflow-hidden mb-4" aria-labelledby="attentionTitle">
+        <div class="dash-split mb-4">
+        <section class="rapid-card p-0 overflow-hidden dash-split-main" aria-labelledby="attentionTitle">
             <div class="flex justify-between items-center gap-2 px-4 py-3 border-b border-rapid-border">
                 <h2 id="attentionTitle" class="text-lg mb-0">Needs attention</h2>
-                <span class="text-sm text-rapid-muted"><?= count($attention) ?> ticket<?= count($attention) === 1 ? '' : 's' ?></span>
+                <?php if ($attentionTotal > 0): ?>
+                    <a class="text-sm font-bold" href="<?= e(url('admin/tickets.php?attention=1')) ?>">View all <?= (int) $attentionTotal ?></a>
+                <?php endif; ?>
             </div>
             <?php if (!$attention): ?>
                 <p class="px-4 py-5 mb-0 text-sm text-rapid-muted"><i class="bi bi-check-circle text-emerald-700" aria-hidden="true"></i> Nothing is blocked right now.</p>
@@ -172,6 +194,55 @@ require_once __DIR__ . '/../includes/navbar.php';
                 </div>
             <?php endif; ?>
         </section>
+
+        <div class="dash-split-side">
+            <section class="rapid-card" aria-labelledby="techLoadTitle">
+                <div class="flex justify-between items-center gap-2 mb-4">
+                    <h2 id="techLoadTitle" class="text-lg mb-0">Technician load</h2>
+                    <a class="text-sm font-bold" href="<?= e(url('admin/technicians.php')) ?>">All</a>
+                </div>
+                <?php if (!$techLoad): ?>
+                    <p class="text-sm text-rapid-muted mb-0">No technicians yet.</p>
+                <?php else: ?>
+                    <ul class="load-list">
+                        <?php foreach ($techLoad as $t): ?>
+                            <li>
+                                <div class="load-list-row">
+                                    <span class="font-bold"><?= e($t['name']) ?></span>
+                                    <span class="text-rapid-muted"><?= (int) $t['open_jobs'] ?> open<?= $t['availability_status'] !== 'available' ? ' · ' . e(ucfirst((string) $t['availability_status'])) : '' ?></span>
+                                </div>
+                                <div class="load-bar" role="img" aria-label="<?= (int) $t['open_jobs'] ?> open jobs"><span style="width: <?= (int) round((int) $t['open_jobs'] / $maxLoad * 100) ?>%"></span></div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </section>
+
+            <section class="rapid-card" aria-labelledby="openClaimsTitle">
+                <div class="flex justify-between items-center gap-2 mb-2">
+                    <h2 id="openClaimsTitle" class="text-lg mb-0">Open warranty claims</h2>
+                    <a class="text-sm font-bold" href="<?= e(url('admin/claims.php')) ?>">All</a>
+                </div>
+                <?php if (!$openClaimRows): ?>
+                    <p class="text-sm text-rapid-muted mb-0">No open claims.</p>
+                <?php else: ?>
+                    <ul class="claim-mini-list">
+                        <?php foreach ($openClaimRows as $c): ?>
+                            <li>
+                                <a href="<?= e(url('admin/claim.php?id=' . (int) $c['id'])) ?>">
+                                    <span class="min-w-0">
+                                        <span class="ticket-mono text-sm">Claim #<?= (int) $c['id'] ?></span>
+                                        <span class="block font-bold text-rapid truncate"><?= e($c['brand'] . ' ' . $c['model']) ?></span>
+                                    </span>
+                                    <span class="badge-status <?= e(claim_badge_class($c['claim_status'])) ?>"><?= e(claim_status_label($c['claim_status'])) ?></span>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+            </section>
+        </div>
+        </div>
 
         <div class="rapid-card p-0 overflow-hidden mb-4">
             <div class="flex justify-between items-center px-4 py-3 border-b border-rapid-border">

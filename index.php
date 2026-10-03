@@ -15,358 +15,176 @@ $shopPhone = get_setting('shop_phone', '09101495174');
 $shopEmail = get_setting('shop_email', 'support@rapid.local');
 $shopHours = get_setting('shop_hours', 'Mon–Sat, 9:00 AM – 6:00 PM');
 $shopAddress = get_setting('shop_address', 'Esposado, Cannery Site, Polomolok, South Cotabato 9505');
+$warrantyDays = warranty_days_setting();
+
+// Exploded-view layers, back to front: key => [label, service it maps to]
+$phoneParts = [
+    'screen' => ['Display & touch', 'Cracked or dead screens'],
+    'frame' => ['Mid-frame', 'Housing, buttons, ports'],
+    'board' => ['Logic board', 'Board-level diagnostics'],
+    'battery' => ['Battery', 'Swelling, fast drain'],
+    'back' => ['Back glass', 'Rear glass & cameras'],
+];
 
 require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/navbar.php';
 ?>
 
 <main class="lp">
-    <section class="lp-hero">
-        <div class="lp-hero-bg" aria-hidden="true" data-lp-hero-bg>
-            <div class="lp-hero-grid"></div>
-            <div class="lp-hero-glow"></div>
+    <section class="lp-wrap lp-hero" aria-labelledby="heroTitle">
+        <div class="lp-hero-copy">
+            <p class="lp-tag"><b>Live</b> Repair tracking · Polomolok, South Cotabato</p>
+            <h1 id="heroTitle">Repairs you can see <span>right through.</span></h1>
+            <p class="lp-lead">Every device is photographed at drop-off, diagnosed at the board, quoted before work starts, and tracked live until pickup.</p>
+            <div class="lp-actions">
+                <?php if (is_logged_in()): ?>
+                    <a class="lp-pill lp-pill-dark lp-pill-lg" href="<?= e(url(role_home_path(current_user()['role']))) ?>">
+                        Go to dashboard <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                <?php else: ?>
+                    <a class="lp-pill lp-pill-dark lp-pill-lg" href="<?= e(url('auth/register.php')) ?>">
+                        Book a repair <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                <?php endif; ?>
+                <a class="lp-pill lp-pill-line lp-pill-lg" href="#track-panel">Track a repair</a>
+            </div>
+            <ul class="lp-chips">
+                <li>Photo-documented intake</li>
+                <li>Quote before any work</li>
+                <li><?= (int) $warrantyDays ?>-day warranty</li>
+            </ul>
         </div>
 
-        <div class="lp-container lp-hero-layout">
-            <div class="lp-hero-copy">
-                <p class="lp-kicker">
-                    <span class="lp-kicker-dot" aria-hidden="true"></span>
-                    Precision device care · Polomolok
-                </p>
-                <h1>
-                    Precision repair.
-                    <em>Total visibility.</em>
-                </h1>
-                <p class="lp-lead">
-                    RAPID documents every job from drop-off to warranty — diagnostics, quotations,
-                    live status, and pickup — so you always know where your device stands.
-                </p>
-                <div class="lp-hero-actions">
-                    <?php if (is_logged_in()): ?>
-                        <a class="lp-btn lp-btn-solid" href="<?= e(url(role_home_path(current_user()['role']))) ?>">
-                            Go to dashboard
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </a>
-                    <?php else: ?>
-                        <a class="lp-btn lp-btn-solid" href="<?= e(url('auth/register.php')) ?>">
-                            Book a repair
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </a>
-                        <a class="lp-btn lp-btn-ghost" href="#track-panel">Track a repair</a>
-                    <?php endif; ?>
-                </div>
-                <ul class="lp-trust">
-                    <li>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-2.8 7.4-7 9-4.2-1.6-7-4.5-7-9V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.8 12.2l2.1 2.1 4.4-4.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        30-day warranty
-                    </li>
-                    <li>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.8V12l3 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                        Live ticket status
-                    </li>
-                    <li>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="12" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 6l1.2-1.8h5.6L16 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Photo documentation
-                    </li>
-                </ul>
-            </div>
-
-            <div class="lp-hero-visual">
-                <div class="lp-stage" data-lp-stage>
-                    <div class="lp-stage-floor" aria-hidden="true"></div>
-                    <div class="lp-cluster" data-lp-cluster>
-                        <div class="lp-ring" aria-hidden="true">
-                            <svg viewBox="0 0 420 420">
-                                <circle cx="210" cy="210" r="168" fill="none" stroke="rgba(61,148,253,0.28)" stroke-width="1.2" stroke-dasharray="6 10"/>
-                                <circle cx="210" cy="210" r="128" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-                            </svg>
-                        </div>
-
-                        <div class="lp-laptop" aria-hidden="true">
-                            <div class="lp-laptop-lid">
-                                <div class="lp-laptop-screen">
-                                    <div class="lp-os-bar">
-                                        <span></span><span></span><span></span>
-                                        <strong>Live repair</strong>
+        <div class="lp-stage is-exploded" data-rig-stage>
+            <div class="lp-stage-glow" aria-hidden="true"></div>
+            <div class="lp-scene" aria-hidden="true">
+                <div class="lp-floor"></div>
+                <div class="lp-float">
+                    <div class="lp-rig" data-rig>
+                        <div class="lp-layer lp-l-back" data-layer="back"><div class="lp-cam"><i></i><i></i><i></i><i></i></div></div>
+                        <div class="lp-layer lp-l-battery" data-layer="battery"><div class="lp-batt"><span class="lp-batt-ico"></span>Battery</div></div>
+                        <div class="lp-layer lp-l-board" data-layer="board"><div class="lp-board"><span class="lp-chip lp-chip-soc"></span><span class="lp-chip lp-chip-1"></span><span class="lp-chip lp-chip-2"></span><span class="lp-chip lp-chip-3"></span><span class="lp-pads"></span></div></div>
+                        <div class="lp-layer lp-l-frame" data-layer="frame"></div>
+                        <div class="lp-layer lp-l-screen" data-layer="screen">
+                            <div class="lp-glass">
+                                <div class="lp-island">
+                                    <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="3"/><circle cx="10" cy="10" r="7" fill="none" stroke="#6E9BFF" stroke-width="3" stroke-dasharray="27.3 44" stroke-linecap="round" transform="rotate(-90 10 10)"/></svg>
+                                    <b>62%</b>
+                                </div>
+                                <div class="lp-ui">
+                                    <div class="lp-ui-top"><span>RAPID</span><span class="lp-ui-live">Live</span></div>
+                                    <div class="lp-ui-card">
+                                        <span class="lp-mono">RPR-2026-000142</span>
+                                        <span class="lp-ui-status">Repairing</span>
+                                        <span class="lp-ui-eta">Ready today · 5:00 PM</span>
+                                        <div class="lp-segs"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span></div>
                                     </div>
-                                    <div class="lp-os-bench">
-                                        <span class="lp-os-phone">
-                                            <i></i>
-                                        </span>
-                                        <svg class="lp-wave" viewBox="0 0 148 56" preserveAspectRatio="none">
-                                            <path d="M0 32 C12 32 12 12 24 12 S36 44 48 44 60 16 72 16 84 40 96 40 108 10 120 10 132 36 148 36" fill="none" stroke="#3D94FD" stroke-width="2.2"/>
-                                            <path d="M0 40 C14 40 10 24 26 24 S42 50 56 50 70 28 84 28 98 52 112 52 126 22 148 22" fill="none" stroke="rgba(61,148,253,0.35)" stroke-width="1.6"/>
-                                        </svg>
-                                    </div>
-                                    <div class="lp-os-stats">
-                                        <span>Display <b>Fixing</b></span>
-                                        <span>Board <b>Live</b></span>
-                                        <span>Test <b>62%</b></span>
-                                    </div>
+                                    <div class="lp-ui-card"><span class="lp-ui-dim">Quotation · approved</span><span class="lp-ui-amt">₱3,450.00</span></div>
+                                    <div class="lp-ui-btn">View ticket</div>
                                 </div>
                             </div>
-                            <div class="lp-laptop-base"></div>
-                        </div>
-
-                        <div class="lp-phone-wrap">
-                        <div class="lp-phone" aria-hidden="true">
-                            <div class="lp-phone-face lp-phone-back"></div>
-                            <div class="lp-phone-face lp-phone-left"></div>
-                            <div class="lp-phone-face lp-phone-right"></div>
-                            <div class="lp-phone-face lp-phone-top"></div>
-                            <div class="lp-phone-face lp-phone-bottom"></div>
-                            <div class="lp-phone-face lp-phone-front">
-                                <div class="lp-phone-glass">
-                                    <div class="lp-phone-statusbar">
-                                        <span class="lp-sb-time">9:41</span>
-                                        <span class="lp-island">
-                                            <svg class="lp-island-ring" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="3"/><circle cx="10" cy="10" r="7" fill="none" stroke="#3D94FD" stroke-width="3" stroke-dasharray="27.3 44" stroke-linecap="round" transform="rotate(-90 10 10)"/></svg>
-                                            <b>62%</b>
-                                        </span>
-                                        <span class="lp-sb-icons">
-                                            <i class="lp-sb-sig"></i>
-                                            <b class="lp-sb-net">5G</b>
-                                            <i class="lp-sb-batt"></i>
-                                        </span>
-                                    </div>
-                                    <div class="lp-phone-ui">
-                                        <div class="lp-app-top">
-                                            <span class="lp-phone-brand">RAPID · Live status</span>
-                                            <span class="lp-app-live"><i></i>Live</span>
-                                        </div>
-                                        <div class="lp-tcard">
-                                            <div>
-                                                <p class="lp-phone-ticket">RPR-2026-000142</p>
-                                                <p class="lp-phone-device">iPhone 15 Pro · Deep Blue</p>
-                                            </div>
-                                            <p class="lp-tstatus">Repairing</p>
-                                            <p class="lp-teta">Ready today · est. 5:00 PM</p>
-                                            <div class="lp-segs"><span class="on"></span><span class="on"></span><span class="now"></span><span></span><span></span></div>
-                                            <div class="lp-seglbl"><span>Received</span><span>Repair</span><span>Pickup</span></div>
-                                        </div>
-                                        <div class="lp-tech"><b>BT</b><span><strong>Ben Torres</strong>Your technician</span></div>
-                                        <div class="lp-tcard lp-tquote">
-                                            <div class="lp-tquote-row"><span>Quotation</span><span class="is-ok">Approved</span></div>
-                                            <p class="lp-tquote-amt">₱3,450.00</p>
-                                        </div>
-                                        <div class="lp-app-btn">View ticket</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="lp-phone-shadow" aria-hidden="true"></div>
-                        </div>
-
-                        <div class="lp-toast" data-lp-depth="1.1" aria-hidden="true">
-                            <span class="lp-toast-ico"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                            <span><b>Quote approved</b>Repair started on RPR-2026-000142 · just now</span>
-                        </div>
-
-                        <div class="lp-chip-card lp-chip-a" data-lp-depth="0.8">
-                            <svg viewBox="0 0 32 32" aria-hidden="true">
-                                <rect x="7" y="7" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                                <path d="M11 4v4M21 4v4M11 24v4M21 24v4M4 11h4M24 11h4M4 21h4M24 21h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                                <rect x="12" y="12" width="8" height="8" rx="1.2" fill="currentColor" opacity="0.35"/>
-                            </svg>
-                            Board-level
-                        </div>
-                        <div class="lp-chip-card lp-chip-b">
-                            <span class="lp-chip-dot"></span>
-                            Live tracking
-                        </div>
-                        <div class="lp-chip-card lp-chip-c" data-lp-depth="0.7">
-                            <svg viewBox="0 0 32 32" aria-hidden="true">
-                                <path d="M16 5l9 4v7.5c0 5.4-3.4 8.8-9 10.7-5.6-1.9-9-5.3-9-10.7V9l9-4z" fill="none" stroke="currentColor" stroke-width="1.6"/>
-                                <path d="M12 16.2l2.6 2.6 5.4-5.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                            </svg>
-                            30-day cover
-                        </div>
-
-                        <div class="lp-float-tool" aria-hidden="true">
-                            <svg viewBox="0 0 64 64">
-                                <defs>
-                                    <linearGradient id="lpTool" x1="0" y1="0" x2="1" y2="1">
-                                        <stop offset="0%" stop-color="#E8EEF6"/>
-                                        <stop offset="100%" stop-color="#8B98AB"/>
-                                    </linearGradient>
-                                </defs>
-                                <rect x="28" y="6" width="8" height="34" rx="2" fill="url(#lpTool)"/>
-                                <path d="M18 42h28l-4 14H22l-4-14z" fill="#1A3A6B"/>
-                                <rect x="30" y="2" width="4" height="8" rx="1" fill="#3D94FD"/>
-                            </svg>
                         </div>
                     </div>
                 </div>
-
             </div>
+
+            <div class="lp-callouts">
+                <?php foreach ($phoneParts as $key => [$label, $service]): ?>
+                    <button type="button" class="lp-callout" data-rig-focus="<?= e($key) ?>" aria-pressed="false">
+                        <i aria-hidden="true"></i><span><?= e($label) ?><small><?= e($service) ?></small></span>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="lp-seg" role="group" aria-label="Phone view">
+                <button type="button" class="is-on" data-rig-mode="exploded" aria-pressed="true">Exploded view</button>
+                <button type="button" data-rig-mode="assembled" aria-pressed="false">Assembled</button>
+            </div>
+            <span class="lp-hint">Move your pointer to rotate</span>
         </div>
     </section>
 
-    <section class="lp-track-strip" aria-labelledby="trackTitle">
-        <div class="lp-container">
-            <form class="lp-track" id="track-panel" method="get" action="<?= e(url('track.php')) ?>" data-disable-on-submit>
-                <div class="lp-track-head">
-                    <h2 id="trackTitle">Track my repair</h2>
-                    <p>Ticket number and contact. No login needed.</p>
-                </div>
-                <div class="lp-track-field">
-                    <label class="form-label" for="ticket_number">Ticket number</label>
-                    <input type="text" class="form-control ticket-input" id="ticket_number" name="ticket"
+    <section class="lp-wrap lp-bento" id="services" aria-label="Track your repair and what we do">
+        <form class="lp-cell lp-cell-dark lp-span-2" id="track-panel" method="get" action="<?= e(url('track.php')) ?>" data-disable-on-submit aria-labelledby="trackTitle">
+            <span class="lp-kicker">No login needed</span>
+            <h2 id="trackTitle">Track your repair</h2>
+            <div class="lp-track-fields">
+                <label class="lp-field" for="ticket_number">Ticket number
+                    <input type="text" class="lp-input lp-mono" id="ticket_number" name="ticket"
                            placeholder="RPR-2026-000001" required
                            pattern="RPR-\d{4}-\d{6}" title="Format: RPR-YYYY-000001">
-                </div>
-                <div class="lp-track-field">
-                    <label class="form-label" for="contact">Phone or email</label>
-                    <input type="text" class="form-control" id="contact" name="contact"
-                           placeholder="Used on the booking" required>
-                </div>
-                <button class="btn btn-rapid-primary" type="submit">Track repair</button>
-            </form>
-        </div>
+                </label>
+                <label class="lp-field" for="contact">Phone or email
+                    <input type="text" class="lp-input" id="contact" name="contact" placeholder="Used on the booking" required>
+                </label>
+            </div>
+            <button class="lp-pill lp-pill-blue" type="submit">Track repair</button>
+        </form>
+
+        <article class="lp-cell" data-lp-reveal>
+            <span class="lp-kicker">Live status</span>
+            <h3>Know the stage, not just “in progress”</h3>
+            <div class="lp-cell-foot">
+                <div class="lp-bars"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span></div>
+                <div class="lp-bar-labels"><span>Received</span><b>Repairing</b><span>Pickup</span></div>
+            </div>
+        </article>
+
+        <article class="lp-cell" data-lp-reveal>
+            <span class="lp-kicker">Quotation</span>
+            <h3>Approve the price before we start</h3>
+            <div class="lp-cell-foot lp-quote">
+                <span><small>Example total</small><b>₱3,450.00</b></span>
+                <span class="lp-pill lp-pill-dark lp-pill-sm" aria-hidden="true">Approve</span>
+            </div>
+        </article>
+
+        <article class="lp-cell" data-lp-reveal>
+            <span class="lp-kicker">Warranty</span>
+            <h3><?= (int) $warrantyDays ?> days on every repair</h3>
+            <div class="lp-cell-foot lp-warranty">
+                <svg viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="30" fill="none" stroke="#E3E5EA" stroke-width="8"/><circle cx="36" cy="36" r="30" fill="none" stroke="#1F5BFF" stroke-width="8" stroke-dasharray="132 189" stroke-linecap="round" transform="rotate(-90 36 36)"/></svg>
+                <p>Starts when you pick up. File a claim against the original ticket if the problem comes back.</p>
+            </div>
+        </article>
+
+        <article class="lp-cell lp-span-2" data-lp-reveal>
+            <span class="lp-kicker">What we fix</span>
+            <h3>Phones, laptops, tablets and wearables — down to the board.</h3>
+            <ul class="lp-chips lp-cell-foot">
+                <li>Screens &amp; touch</li>
+                <li>Batteries</li>
+                <li>Charging ports</li>
+                <li>Board-level faults</li>
+                <li>Keyboards</li>
+                <li>Water damage</li>
+                <li>Back glass &amp; cameras</li>
+            </ul>
+        </article>
     </section>
 
-    <section class="lp-section lp-services" id="services">
-        <div class="lp-container">
-            <div class="lp-section-head" data-lp-reveal>
-                <p class="lp-eyebrow">Capabilities</p>
-                <h2>Bench-grade care for the devices you actually use.</h2>
-                <p class="lp-section-lead">Documented intake, component-level work, and a ticket you can follow from any phone.</p>
-            </div>
-            <div class="lp-service-grid">
-                <article class="lp-service" data-lp-reveal>
-                    <div class="lp-service-ico" aria-hidden="true">
-                        <svg viewBox="0 0 64 64">
-                            <rect x="20" y="8" width="24" height="48" rx="5" fill="none" stroke="currentColor" stroke-width="2"/>
-                            <rect x="23.5" y="13" width="17" height="34" rx="2.5" fill="currentColor" opacity="0.12"/>
-                            <circle cx="32" cy="51.5" r="1.8" fill="currentColor"/>
-                        </svg>
-                    </div>
-                    <h3>Smartphones</h3>
-                    <p>Screens, batteries, charging ports, and board-level faults — photographed before and after.</p>
-                </article>
-                <article class="lp-service" data-lp-reveal>
-                    <div class="lp-service-ico" aria-hidden="true">
-                        <svg viewBox="0 0 64 64">
-                            <rect x="10" y="12" width="44" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
-                            <path d="M18 48h28M24 40v8M40 40v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            <rect x="14" y="16" width="36" height="20" rx="1.5" fill="currentColor" opacity="0.12"/>
-                        </svg>
-                    </div>
-                    <h3>Laptops</h3>
-                    <p>Hardware diagnostics, storage, keyboards, and thermal service with a digital quotation first.</p>
-                </article>
-                <article class="lp-service" data-lp-reveal>
-                    <div class="lp-service-ico" aria-hidden="true">
-                        <svg viewBox="0 0 64 64">
-                            <rect x="12" y="10" width="40" height="44" rx="4" fill="none" stroke="currentColor" stroke-width="2"/>
-                            <rect x="16" y="16" width="32" height="28" rx="2" fill="currentColor" opacity="0.12"/>
-                            <path d="M28 50h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <h3>Tablets &amp; more</h3>
-                    <p>Slate devices, wearables, and accessories tracked on the same RAPID ticket workflow.</p>
-                </article>
-                <article class="lp-service" data-lp-reveal>
-                    <div class="lp-service-ico" aria-hidden="true">
-                        <svg viewBox="0 0 64 64">
-                            <path d="M32 8l20 8v14c0 12-8.4 19.6-20 24C20.4 49.6 12 42 12 30V16l20-8z" fill="none" stroke="currentColor" stroke-width="2"/>
-                            <path d="M22 31l7 7 14-15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <h3>Warranty claims</h3>
-                    <p>Completed jobs open a warranty window. File a claim against the original ticket, not a new guess.</p>
-                </article>
-            </div>
+    <section class="lp-wrap lp-how" id="how-it-works" aria-labelledby="howTitle">
+        <div class="lp-how-head" data-lp-reveal>
+            <h2 id="howTitle">Four steps. One ticket. Nothing lost.</h2>
+            <p>You, the technician and the front desk all look at the same ticket.</p>
         </div>
+        <ol class="lp-steps">
+            <li data-lp-reveal><span>01</span><h3>Book &amp; photograph</h3><p>Device details and before-repair photos of each side.</p></li>
+            <li data-lp-reveal><span>02</span><h3>Diagnose &amp; quote</h3><p>A technician finds the fault and sends a price you approve.</p></li>
+            <li data-lp-reveal><span>03</span><h3>Repair live</h3><p>Each stage updates your ticket the moment it changes.</p></li>
+            <li data-lp-reveal><span>04</span><h3>Pickup &amp; warranty</h3><p>Collect it with a warranty you can claim against.</p></li>
+        </ol>
     </section>
 
-    <section class="lp-section lp-process" id="how-it-works">
-        <div class="lp-container">
-            <div class="lp-section-head" data-lp-reveal>
-                <p class="lp-eyebrow">Workflow</p>
-                <h2>Four steps. One thread. Nothing lost on the bench.</h2>
-                <p class="lp-section-lead">Customers, technicians, and the shop floor share the same ticket — not a paper trail.</p>
+    <section class="lp-wrap lp-visit" id="contact" aria-labelledby="visitTitle">
+        <div class="lp-visit-band">
+            <div>
+                <h2 id="visitTitle">Bring it in. Watch it get fixed.</h2>
+                <p><?= e($shopAddress) ?> · <?= e($shopHours) ?></p>
             </div>
-            <ol class="lp-steps">
-                <li class="lp-step" data-lp-reveal>
-                    <span class="lp-step-num">01</span>
-                    <h3>Book &amp; document</h3>
-                    <p>Submit device details with before-repair photos or videos so the bench sees what you see.</p>
-                </li>
-                <li class="lp-step" data-lp-reveal>
-                    <span class="lp-step-num">02</span>
-                    <h3>Diagnose &amp; quote</h3>
-                    <p>Technicians inspect, diagnose, and send a digital quotation you can approve or decline.</p>
-                </li>
-                <li class="lp-step" data-lp-reveal>
-                    <span class="lp-step-num">03</span>
-                    <h3>Repair &amp; notify</h3>
-                    <p>Follow status updates from approval through repair — no chasing the counter for news.</p>
-                </li>
-                <li class="lp-step" data-lp-reveal>
-                    <span class="lp-step-num">04</span>
-                    <h3>Pickup &amp; warranty</h3>
-                    <p>Completed jobs open a warranty window with linked claims if anything comes back.</p>
-                </li>
-            </ol>
-        </div>
-    </section>
-
-    <section class="lp-section lp-contact" id="contact">
-        <div class="lp-container lp-contact-grid">
-            <div data-lp-reveal>
-                <p class="lp-eyebrow">Visit</p>
-                <h2>The bench is in <?= e($shopAddress) ?> — the ticket lives online.</h2>
-                <p class="lp-section-lead">Walk in for drop-off, then follow every update from your phone. Same shop. Clearer paper trail.</p>
-                <div class="lp-contact-actions">
-                    <a class="lp-btn lp-btn-navy" href="tel:<?= e(preg_replace('/[^0-9+]/', '', $shopPhone)) ?>">
-                        Call <?= e($shopPhone) ?>
-                    </a>
-                    <a class="lp-btn lp-btn-line" href="mailto:<?= e($shopEmail) ?>">Email the shop</a>
-                </div>
-            </div>
-            <div class="lp-contact-card" data-lp-reveal>
-                <div class="lp-map" aria-hidden="true">
-                    <svg viewBox="0 0 360 160" preserveAspectRatio="none">
-                        <defs>
-                            <pattern id="lpMapGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                                <path d="M20 0H0V20" fill="none" stroke="rgba(9,28,57,0.08)" stroke-width="1"/>
-                            </pattern>
-                        </defs>
-                        <rect width="360" height="160" fill="#E8EEF6"/>
-                        <rect width="360" height="160" fill="url(#lpMapGrid)"/>
-                        <path d="M0 110 C40 90 70 130 120 100 S200 60 260 88 320 140 360 120" fill="none" stroke="#0072FC" stroke-opacity="0.35" stroke-width="8"/>
-                        <path d="M0 70 C80 40 140 90 200 58 S300 20 360 48" fill="none" stroke="#091C39" stroke-opacity="0.12" stroke-width="6"/>
-                    </svg>
-                    <span class="lp-pin">
-                        <svg viewBox="0 0 32 40">
-                            <path d="M16 0C8 0 2 6.2 2 14.2 2 24 16 40 16 40s14-16 14-25.8C30 6.2 24 0 16 0z" fill="#0072FC"/>
-                            <circle cx="16" cy="14" r="5" fill="#fff"/>
-                        </svg>
-                    </span>
-                </div>
-                <dl class="lp-contact-dl">
-                    <div>
-                        <dt>Studio</dt>
-                        <dd><?= e(SHOP_NAME) ?></dd>
-                    </div>
-                    <div>
-                        <dt>Address</dt>
-                        <dd><?= e($shopAddress) ?></dd>
-                    </div>
-                    <div>
-                        <dt>Phone</dt>
-                        <dd><?= e($shopPhone) ?></dd>
-                    </div>
-                    <div>
-                        <dt>Email</dt>
-                        <dd><a href="mailto:<?= e($shopEmail) ?>"><?= e($shopEmail) ?></a></dd>
-                    </div>
-                    <div>
-                        <dt>Hours</dt>
-                        <dd><?= e($shopHours) ?></dd>
-                    </div>
-                </dl>
+            <div class="lp-actions">
+                <a class="lp-pill lp-pill-white lp-pill-lg" href="tel:<?= e(preg_replace('/[^0-9+]/', '', $shopPhone)) ?>">Call <?= e($shopPhone) ?></a>
+                <a class="lp-pill lp-pill-outline-white lp-pill-lg" href="mailto:<?= e($shopEmail) ?>"><?= e($shopEmail) ?></a>
             </div>
         </div>
     </section>

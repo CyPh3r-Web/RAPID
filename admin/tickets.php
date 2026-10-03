@@ -45,6 +45,11 @@ if ($warranty === 'active') {
     $where[] = 'NOT EXISTS (SELECT 1 FROM warranties w WHERE w.ticket_id = rt.id)';
 }
 
+$attentionOnly = ($_GET['attention'] ?? '') === '1';
+if ($attentionOnly) {
+    $where[] = ticket_open_sql() . ' AND (' . implode(' OR ', array_map(static fn ($c) => "($c)", ticket_attention_rules())) . ')';
+}
+
 $whereSql = implode(' AND ', $where);
 $technicians = list_active_technicians();
 
@@ -99,7 +104,15 @@ require_once __DIR__ . '/../includes/navbar.php';
             <p>Search, filter, assign technicians, and monitor progress.</p>
         </div>
 
+        <?php if ($attentionOnly): ?>
+            <div class="quote-banner" role="status">
+                <span><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Showing tickets that need attention (unassigned, overdue, unanswered quotes, uncollected).</span>
+                <a class="btn btn-sm btn-rapid-outline" href="<?= e(url('admin/tickets.php')) ?>">Show all tickets</a>
+            </div>
+        <?php endif; ?>
+
         <form method="get" class="filter-bar">
+            <?php if ($attentionOnly): ?><input type="hidden" name="attention" value="1"><?php endif; ?>
             <div>
                 <label class="form-label" for="q">Search</label>
                 <input type="text" class="form-control" id="q" name="q" value="<?= e($q) ?>" placeholder="Ticket, name, phone, device…">
@@ -198,6 +211,7 @@ require_once __DIR__ . '/../includes/navbar.php';
                                 'priority' => $priority,
                                 'technician' => $technician ?: null,
                                 'warranty' => $warranty !== '' ? $warranty : null,
+                                'attention' => $attentionOnly ? '1' : null,
                             ]));
                             $base = url('admin/tickets.php') . ($qs !== '' ? '?' . $qs . '&' : '?');
                             ?>

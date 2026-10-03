@@ -39,6 +39,10 @@ $stmt = db()->prepare(
 $stmt->execute($params);
 $claims = $stmt->fetchAll();
 
+$claimCounts = db()->query('SELECT claim_status, COUNT(*) FROM warranty_claims GROUP BY claim_status')
+    ->fetchAll(PDO::FETCH_KEY_PAIR);
+$claimTotal = array_sum(array_map('intval', $claimCounts));
+
 $pageTitle = 'Warranty Claims';
 $showSidebar = true;
 $navVariant = 'app';
@@ -56,6 +60,14 @@ require_once __DIR__ . '/../includes/navbar.php';
             <h1>Warranty claims</h1>
             <p>Review and process customer warranty follow-ups.</p>
         </div>
+
+        <nav class="status-tabs mb-4" aria-label="Filter by claim status">
+            <?php $tabQ = $q !== '' ? '&q=' . urlencode($q) : ''; ?>
+            <a href="<?= e(url('admin/claims.php') . ($q !== '' ? '?q=' . urlencode($q) : '')) ?>" class="<?= $status === '' ? 'is-active' : '' ?>"<?= $status === '' ? ' aria-current="true"' : '' ?>>All <span><?= (int) $claimTotal ?></span></a>
+            <?php foreach (CLAIM_STATUSES as $key => $label): ?>
+                <a href="<?= e(url('admin/claims.php?status=' . $key) . $tabQ) ?>" class="<?= $status === $key ? 'is-active' : '' ?>"<?= $status === $key ? ' aria-current="true"' : '' ?>><?= e($label) ?> <span><?= (int) ($claimCounts[$key] ?? 0) ?></span></a>
+            <?php endforeach; ?>
+        </nav>
 
         <form method="get" class="filter-bar">
             <div>
